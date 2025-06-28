@@ -204,7 +204,7 @@ const RegisterPage = () => {
                     <option value="teamζ">teamζ（ゼータ）</option>
                     <option value="teamη">teamη（イータ）</option>
                     <option value="teamθ">teamθ（シータ）</option>
-                    <option value="teamι">teamι（イオタ）</option>
+
                 </select>
                </div>
              </div>
