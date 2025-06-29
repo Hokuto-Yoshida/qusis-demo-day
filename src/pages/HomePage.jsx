@@ -14,7 +14,6 @@ const HomePage = () => {
       case 'live':
         return {
           label: 'デモ中',
-          color: 'bg-red-500',
           textColor: 'text-red-600',
           bgColor: 'bg-red-50',
           icon: <Play className="w-4 h-4" />
@@ -22,7 +21,6 @@ const HomePage = () => {
       case 'ended':
         return {
           label: '終了',
-          color: 'bg-gray-500',
           textColor: 'text-gray-600',
           bgColor: 'bg-gray-50',
           icon: <CheckCircle className="w-4 h-4" />
@@ -30,7 +28,6 @@ const HomePage = () => {
       default:
         return {
           label: '開始前',
-          color: 'bg-blue-500',
           textColor: 'text-blue-600',
           bgColor: 'bg-blue-50',
           icon: <Clock className="w-4 h-4" />
@@ -46,10 +43,9 @@ const HomePage = () => {
         </button>
       );
     }
-
     return (
       <Link
-        to={`/pitch/${pitch.id}`}
+        to={`/pitch/${pitch._id}`}
         className={`w-full py-2 px-4 rounded-lg font-medium transition-colors text-center block ${
           pitch.status === 'live'
             ? 'bg-red-500 hover:bg-red-600 text-white'
@@ -63,22 +59,20 @@ const HomePage = () => {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
-
       {/* Pitch Grid */}
       <div className="mb-8">
         <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-6">今日のピッチ一覧</h2>
-        
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {pitches.map((pitch) => {
-            const statusInfo = getStatusInfo(pitch.status);
-            
+            const { label, textColor, bgColor, icon } = getStatusInfo(pitch.status);
+
             return (
-              <div key={pitch.id} className="bg-white rounded-lg shadow-sm border overflow-hidden">
+              <div key={pitch._id} className="bg-white rounded-lg shadow-sm border overflow-hidden">
                 {/* Cover Image */}
                 <div className="h-48 bg-gradient-to-br from-teal-500 to-blue-600 relative">
                   {pitch.coverImage ? (
-                    <img 
-                      src={pitch.coverImage} 
+                    <img
+                      src={pitch.coverImage}
                       alt={pitch.title}
                       className="w-full h-full object-cover"
                     />
@@ -90,13 +84,15 @@ const HomePage = () => {
                       </div>
                     </div>
                   )}
-                  
+
                   {/* Status Badge */}
-                  <div className={`absolute top-4 left-4 ${statusInfo.bgColor} ${statusInfo.textColor} px-3 py-1 rounded-full text-sm font-medium flex items-center space-x-1`}>
-                    {statusInfo.icon}
-                    <span>{statusInfo.label}</span>
+                  <div
+                    className={`${bgColor} ${textColor} absolute top-4 left-4 px-3 py-1 rounded-full text-sm font-medium flex items-center space-x-1`}
+                  >
+                    {icon}
+                    <span>{label}</span>
                   </div>
-                  
+
                   {/* Live Indicator */}
                   {pitch.status === 'live' && (
                     <div className="absolute top-4 right-4">
@@ -116,10 +112,10 @@ const HomePage = () => {
                     </span>
                     <span className="text-gray-500 text-sm">{pitch.schedule}</span>
                   </div>
-                  
+
                   <h3 className="text-lg font-semibold text-gray-900 mb-2">{pitch.title}</h3>
                   <p className="text-gray-600 text-sm mb-4 line-clamp-2">{pitch.description}</p>
-                  
+
                   {/* Stats */}
                   <div className="flex items-center justify-between mb-4 text-sm">
                     <div className="flex items-center space-x-4">
@@ -132,9 +128,9 @@ const HomePage = () => {
                         <span>{pitch.totalTips} QU</span>
                       </div>
                     </div>
-                    <span className="text-gray-400 text-xs">#{pitch.id}</span>
+                    <span className="text-gray-400 text-xs">#{pitch._id}</span>
                   </div>
-                  
+
                   {/* Action Button */}
                   {getActionButton(pitch)}
                 </div>

@@ -1,4 +1,6 @@
+// src/context/PitchContext.js
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import axios from 'axios';
 
 const PitchContext = createContext();
 
@@ -15,139 +17,158 @@ export const PitchProvider = ({ children }) => {
   const [chatMessages, setChatMessages] = useState({});
   const [tipHistory, setTipHistory] = useState({});
 
-  // Mock pitch data
-  const mockPitches = [
-  ];
-
-  // Mock chat messages
-  const mockChatMessages = {
-
-  };
-
+  // 初回ロードでピッチ一覧＋チャット・投げ銭履歴を API から取得
   useEffect(() => {
-    setPitches(mockPitches);
-    setChatMessages(mockChatMessages);
-    
-    // Initialize tip history
-    const initialTipHistory = {};
-    mockPitches.forEach(pitch => {
-      initialTipHistory[pitch.id] = [];
-    });
-    setTipHistory(initialTipHistory);
+    const fetchAll = async () => {
+      try {
+        // 1) ピッチ一覧
+        const { data: fetchedPitches } = await axios.get('/api/pitches');
+        setPitches(fetchedPitches);
+
+        // 2) 各ピッチのチャット履歴・投げ銭履歴
+        const chatMap = {};
+        const tipMap  = {};
+        await Promise.all(
+          fetchedPitches.map(async (p) => {
+            const [{ data: msgs }, { data: tips }] = await Promise.all([
+              axios.get(`/api/messages/${p._id}`),
+              axios.get(`/api/tips/${p._id}`)
+            ]);
+            chatMap[p._id] = msgs;
+            tipMap[p._id]  = tips;
+          })
+        );
+        setChatMessages(chatMap);
+        setTipHistory(tipMap);
+
+      } catch (err) {
+        console.error('PitchContext: fetchAll error', err);
+      }
+    };
+
+    fetchAll();
   }, []);
 
-  const updatePitchStatus = (pitchId, newStatus) => {
-    setPitches(prev => prev.map(pitch => 
-      pitch.id === pitchId ? { ...pitch, status: newStatus } : pitch
-    ));
+  // ピッチステータス更新
+  const updatePitchStatus = async (pitchId, newStatus) => {
+    try {
+      const { data: updated } = await axios.put(`/api/pitches/${pitchId}`, { status: newStatus });
+      setPitches(prev =>
+        prev.map(p => (p._id === pitchId ? updated : p))
+      );
+    } catch (err) {
+      console.error('updatePitchStatus error', err);
+    }
   };
 
-  const addChatMessage = (pitchId, message, user) => {
-    const newMessage = {
-      id: Date.now(),
-      user: user.name,
-      message,
-      timestamp: new Date().toLocaleTimeString('ja-JP', { 
-        hour: '2-digit', 
-        minute: '2-digit',
-        second: '2-digit'
-      }),
-      avatar: user.avatar
-    };
-
-    setChatMessages(prev => ({
-      ...prev,
-      [pitchId]: [...(prev[pitchId] || []), newMessage]
-    }));
-
-    return newMessage;
+  // チャット投稿
+  const addChatMessage = async (pitchId, message, user) => {
+    try {
+      const { data: msg } = await axios.post('/api/messages', {
+        pitch: pitchId,
+        user: user.id,
+        content: message
+      });
+      setChatMessages(prev => ({
+        ...prev,
+        [pitchId]: [...(prev[pitchId] || []), msg]
+      }));
+      return msg;
+    } catch (err) {
+      console.error('addChatMessage error', err);
+    }
   };
 
-  const addTip = (pitchId, amount, message, fromUser) => {
-    const tip = {
-      id: Date.now(),
-      amount,
-      message: message || '',
-      fromUser: fromUser.name,
-      timestamp: new Date().toLocaleTimeString('ja-JP'),
-      userId: fromUser.id
-    };
-
-    setTipHistory(prev => ({
-      ...prev,
-      [pitchId]: [...(prev[pitchId] || []), tip]
-    }));
-
-    // Update pitch total tips
-    setPitches(prev => prev.map(pitch => 
-      pitch.id === pitchId 
-        ? { ...pitch, totalTips: pitch.totalTips + amount }
-        : pitch
-    ));
-
-    return tip;
+  // 投げ銭追加
+  const addTip = async (pitchId, amount, message, fromUser) => {
+    try {
+      const { data: tip } = await axios.post('/api/tips', {
+        pitch: pitchId,
+        user: fromUser.id,
+        amount,
+        message
+      });
+      // 履歴更新
+      setTipHistory(prev => ({
+        ...prev,
+        [pitchId]: [...(prev[pitchId] || []), tip]
+      }));
+      // ピッチの totalTips も更新
+      setPitches(prev =>
+        prev.map(p =>
+          p._id === pitchId
+            ? { ...p, totalTips: p.totalTips + amount }
+            : p
+        )
+      );
+      return tip;
+    } catch (err) {
+      console.error('addTip error', err);
+    }
   };
 
-  const createPitch = (pitchData) => {
-    const newPitch = {
-      id: Date.now(),
-      title: pitchData.title,
-      description: pitchData.description,
-      team: pitchData.team,
-      status: 'upcoming',
-      coverImage: pitchData.coverImage || null,
-      totalTips: 0,
-      participants: 0,
-      presenterId: pitchData.presenterId,
-      presenterName: pitchData.presenterName,
-      createdAt: new Date().toISOString().split('T')[0],
-      schedule: pitchData.schedule || 'TBD'
-    };
-
-    setPitches(prev => [...prev, newPitch]);
-    setChatMessages(prev => ({ ...prev, [newPitch.id]: [] }));
-    setTipHistory(prev => ({ ...prev, [newPitch.id]: [] }));
-
-    return newPitch;
+  // 新規ピッチ作成
+  const createPitch = async (pitchData) => {
+    try {
+      const { data: newPitch } = await axios.post('/api/pitches', pitchData);
+      setPitches(prev => [...prev, newPitch]);
+      setChatMessages(prev => ({ ...prev, [newPitch._id]: [] }));
+      setTipHistory(prev => ({ ...prev, [newPitch._id]: [] }));
+      return newPitch;
+    } catch (err) {
+      console.error('createPitch error', err);
+      throw err;
+    }
   };
 
-  const updatePitch = (pitchId, updates) => {
-    setPitches(prev => prev.map(pitch => 
-      pitch.id === pitchId ? { ...pitch, ...updates } : pitch
-    ));
+  // ピッチ更新（任意フィールド）
+  const updatePitch = async (pitchId, updates) => {
+    try {
+      const { data: updated } = await axios.put(`/api/pitches/${pitchId}`, updates);
+      setPitches(prev =>
+        prev.map(p => (p._id === pitchId ? updated : p))
+      );
+      return updated;
+    } catch (err) {
+      console.error('updatePitch error', err);
+    }
   };
 
-  const deletePitch = (pitchId) => {
-    setPitches(prev => prev.filter(pitch => pitch.id !== pitchId));
-    setChatMessages(prev => {
-      const newMessages = { ...prev };
-      delete newMessages[pitchId];
-      return newMessages;
-    });
-    setTipHistory(prev => {
-      const newHistory = { ...prev };
-      delete newHistory[pitchId];
-      return newHistory;
-    });
+  // ピッチ削除
+  const deletePitch = async (pitchId) => {
+    try {
+      await axios.delete(`/api/pitches/${pitchId}`);
+      setPitches(prev => prev.filter(p => p._id !== pitchId));
+      setChatMessages(prev => {
+        const next = { ...prev };
+        delete next[pitchId];
+        return next;
+      });
+      setTipHistory(prev => {
+        const next = { ...prev };
+        delete next[pitchId];
+        return next;
+      });
+    } catch (err) {
+      console.error('deletePitch error', err);
+    }
   };
 
-  const getPitchById = (id) => {
-    return pitches.find(pitch => pitch.id === parseInt(id));
-  };
+  // ID でピッチ取得
+  const getPitchById = (id) => pitches.find(p => p._id === id);
 
-  const getPitchesByUser = (userId) => {
-    return pitches.filter(pitch => pitch.presenterId === userId);
-  };
+  // ユーザー別ピッチ取得
+  const getPitchesByUser = (userId) =>
+    pitches.filter(p => p.presenterId === userId);
 
+  // 応援ランキング取得
   const getTopSupporters = (pitchId) => {
     const tips = tipHistory[pitchId] || [];
-    const userTips = {};
-    
-    tips.forEach(tip => {
-      userTips[tip.fromUser] = (userTips[tip.fromUser] || 0) + tip.amount;
+    const tally = {};
+    tips.forEach(t => {
+      tally[t.fromUser] = (tally[t.fromUser] || 0) + t.amount;
     });
-
-    return Object.entries(userTips)
+    return Object.entries(tally)
       .map(([user, amount]) => ({ user, amount }))
       .sort((a, b) => b.amount - a.amount)
       .slice(0, 10);

@@ -1,4 +1,7 @@
+// src/context/CoinContext.jsx
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import axios from 'axios';
+import { io } from 'socket.io-client';
 import { useAuth } from './AuthContext';
 
 const CoinContext = createContext();
@@ -17,183 +20,68 @@ export const CoinProvider = ({ children }) => {
   const [totalEarned, setTotalEarned] = useState(0);
   const [totalSpent, setTotalSpent] = useState(0);
 
-  // Mock transaction data
-  const mockTransactions = [
-    {
-      id: 1,
-      type: 'gift_send',
-      amount: -100,
-      description: 'イベントへのギフト送信',
-      timestamp: '2025年06月26日 16:59',
-      icon: '🎁'
-    },
-    {
-      id: 2,
-      type: 'gift_send',
-      amount: -20,
-      description: 'イベントへのギフト送信',
-      timestamp: '2025年06月26日 11:28',
-      icon: '🎁'
-    },
-    {
-      id: 3,
-      type: 'gift_send',
-      amount: -100,
-      description: 'イベントへのギフト送信',
-      timestamp: '2025年06月26日 11:28',
-      icon: '🎁'
-    },
-    {
-      id: 4,
-      type: 'offline_hearing',
-      amount: 400,
-      description: 'オフラインヒアリング',
-      timestamp: '2025年06月26日 11:28',
-      icon: '👥'
-    },
-    {
-      id: 5,
-      type: 'online_hearing',
-      amount: 200,
-      description: 'オンラインヒアリング',
-      timestamp: '2025年06月26日 11:28',
-      icon: '💻'
-    },
-    {
-      id: 6,
-      type: 'event_participation',
-      amount: 100,
-      description: 'イベント参加',
-      timestamp: '2025年06月26日 11:27',
-      icon: '🎯'
-    }
-  ];
+  // socket.io クライアント
+  const socket = io(import.meta.env.VITE_BACKEND_URL);
 
+  // 初期データ取得 & リアルタイム購読
   useEffect(() => {
-    if (user) {
-      setTransactions(mockTransactions);
-      
-      // Calculate totals
-      const earned = mockTransactions
-        .filter(t => t.amount > 0)
-        .reduce((sum, t) => sum + t.amount, 0);
-      const spent = Math.abs(mockTransactions
-        .filter(t => t.amount < 0)
-        .reduce((sum, t) => sum + t.amount, 0));
-      
-      setTotalEarned(earned);
-      setTotalSpent(spent);
-    }
-  }, [user]);
+    if (!user) return;
 
-  const earnCoins = (type, hours) => {
-    const rates = {
-      offline_hearing: 400,
-      online_hearing: 200,
-      event_participation: 100
+    // トランザクション一覧取得
+    axios.get('/api/coins/transactions')
+      .then(res => {
+        setTransactions(res.data);
+        // 合計を計算
+        const earned = res.data
+          .filter(tx => tx.amount > 0)
+          .reduce((sum, tx) => sum + tx.amount, 0);
+        const spent = res.data
+          .filter(tx => tx.amount < 0)
+          .reduce((sum, tx) => sum + (-tx.amount), 0);
+        setTotalEarned(earned);
+        setTotalSpent(spent);
+      })
+      .catch(console.error);
+
+    // 新トランザクション通知
+    socket.on('transaction-added', (tx) => {
+      setTransactions(prev => [tx, ...prev]);
+      if (tx.amount > 0) {
+        setTotalEarned(prev => prev + tx.amount);
+        updateUser({ coinBalance: user.coinBalance + tx.amount });
+      } else {
+        setTotalSpent(prev => prev + (-tx.amount));
+        updateUser({ coinBalance: user.coinBalance + tx.amount });
+      }
+    });
+
+    return () => {
+      socket.off('transaction-added');
+      socket.disconnect();
     };
+  }, [user, updateUser]);
 
-    const amount = rates[type] * hours;
-    const newTransaction = {
-      id: Date.now(),
-      type,
-      amount,
-      description: getTypeDescription(type),
-      timestamp: new Date().toLocaleDateString('ja-JP', {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit'
-      }),
-      icon: getTypeIcon(type)
-    };
-
-    setTransactions(prev => [newTransaction, ...prev]);
-    setTotalEarned(prev => prev + amount);
-    
-    // Update user balance
-    if (user) {
-      updateUser({ coinBalance: user.coinBalance + amount });
-    }
-
-    return amount;
+  // コイン獲得
+  const earnCoins = async (type, hours) => {
+    const res = await axios.post('/api/coins/earn', { type, hours });
+    // サーバーが 'transaction-added' イベントを emit するので、
+    // クライアント側ではここで setTransactions しなくてよい場合もある。
+    return res.data.amount;
   };
 
-  const spendCoins = (amount, description = 'ギフト送信') => {
+  // コイン使用（投げ銭）
+  const spendCoins = async (amount, description = 'ギフト送信') => {
     if (!user || user.coinBalance < amount) {
       return false;
     }
-
-    const newTransaction = {
-      id: Date.now(),
-      type: 'gift_send',
-      amount: -amount,
-      description,
-      timestamp: new Date().toLocaleDateString('ja-JP', {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit'
-      }),
-      icon: '🎁'
-    };
-
-    setTransactions(prev => [newTransaction, ...prev]);
-    setTotalSpent(prev => prev + amount);
-    
-    // Update user balance
-    updateUser({ coinBalance: user.coinBalance - amount });
-    
-    return true;
+    const res = await axios.post('/api/coins/spend', { amount, description });
+    return res.data.success;
   };
 
-  const earnChatCoins = () => {
-    const amount = 20;
-    const newTransaction = {
-      id: Date.now(),
-      type: 'chat_participation',
-      amount,
-      description: 'チャット参加',
-      timestamp: new Date().toLocaleDateString('ja-JP', {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit'
-      }),
-      icon: '💬'
-    };
-
-    setTransactions(prev => [newTransaction, ...prev]);
-    setTotalEarned(prev => prev + amount);
-    
-    if (user) {
-      updateUser({ coinBalance: user.coinBalance + amount });
-    }
-
-    return amount;
-  };
-
-  const getTypeDescription = (type) => {
-    const descriptions = {
-      offline_hearing: 'オフラインヒアリング',
-      online_hearing: 'オンラインヒアリング', 
-      event_participation: 'イベント参加',
-      chat_participation: 'チャット参加'
-    };
-    return descriptions[type] || type;
-  };
-
-  const getTypeIcon = (type) => {
-    const icons = {
-      offline_hearing: '👥',
-      online_hearing: '💻',
-      event_participation: '🎯',
-      chat_participation: '💬'
-    };
-    return icons[type] || '🪙';
+  // チャット参加報酬
+  const earnChatCoins = async () => {
+    const res = await axios.post('/api/coins/chat');
+    return res.data.amount;
   };
 
   const value = {
@@ -202,9 +90,7 @@ export const CoinProvider = ({ children }) => {
     totalSpent,
     earnCoins,
     spendCoins,
-    earnChatCoins,
-    getTypeDescription,
-    getTypeIcon
+    earnChatCoins
   };
 
   return (
