@@ -5,8 +5,13 @@ import mongoose from 'mongoose';
 import cors from 'cors';
 import dotenvFlow from 'dotenv-flow';
 import { Server as IOServer } from 'socket.io';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
-// モデルのインポート（Tip Aggregation に使う）
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// モデルのインポート
 import Tip from './models/Tip.js';
 
 // ルート
@@ -14,25 +19,26 @@ import pitchesRoutes from './routes/pitches.js';
 import tipsRoutes from './routes/tips.js';
 import messagesRoutes from './routes/messages.js';
 import contributionsRoutes from './routes/contributions.js';
+import authRoutes from './routes/auth.js';  
+import coinsRoutes from './routes/coins.js';
 
 // .env ファイルの読み込み
 dotenvFlow.config();
 
-// 1) Express アプリを作成
 const app = express();
 app.use(cors());
-// ファイルサイズ制限を追加
-app.use(express.json({ limit: '150mb' }));           // 追加
-app.use(express.urlencoded({ limit: '150mb', extended: true })); // 追加
+app.use(express.json({ limit: '150mb' }));
+app.use(express.urlencoded({ limit: '150mb', extended: true }));
 
-// 2) ping エンドポイント
+// 静的ファイルを配信（本番環境用）
+if (process.env.NODE_ENV === 'production') {
+  app.use(express.static(path.join(__dirname, '../dist')));
+}
+
+// API ルート
 app.get('/ping', (_req, res) => {
   res.send('pong');
 });
-
-// 3) 各 API ルート
-import authRoutes from './routes/auth.js';  
-import coinsRoutes from './routes/coins.js';
 
 app.use('/api/auth', authRoutes);          
 app.use('/api/coins', coinsRoutes);
@@ -41,11 +47,20 @@ app.use('/api/tips', tipsRoutes);
 app.use('/api/messages', messagesRoutes);
 app.use('/api/contributions', contributionsRoutes);
 
-// 4) HTTP サーバーを立ち上げてから Socket.io を紐づける
+// React アプリを配信（本番環境用）
+if (process.env.NODE_ENV === 'production') {
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, '../dist/index.html'));
+  });
+}
+
+// HTTP サーバーとSocket.io
 const server = http.createServer(app);
 const io = new IOServer(server, { 
   cors: { 
-    origin: ["http://localhost:5173", "http://localhost:5174"],
+    origin: process.env.NODE_ENV === 'production' 
+      ? ["https://qusis-demo-day-1.onrender.com"] 
+      : ["http://localhost:5173", "http://localhost:5174"],
     methods: ["GET", "POST"],
     credentials: true
   } 
@@ -58,7 +73,7 @@ mongoose
   .then(() => console.log('✅ MongoDB connected'))
   .catch(err => console.error('❌ MongoDB connection error:', err));
 
-// 投げ銭合計をリアルタイム送信する ChangeStream
+// 投げ銭合計をリアルタイム送信
 mongoose.connection.once('open', () => {
   const tipColl = mongoose.connection.collection('tips');
   tipColl.watch().on('change', async () => {
@@ -70,7 +85,6 @@ mongoose.connection.once('open', () => {
   });
 });
 
-// 新規接続時にも現在値を送る
 io.on('connection', async socket => {
   const agg = await Tip.aggregate([
     { $group: { _id: null, sum: { $sum: '$amount' } } }
@@ -79,10 +93,7 @@ io.on('connection', async socket => {
   socket.emit('total-coins-updated', total);
 });
 
-// 5) サーバー起動 - IPv4で明示的にバインド
-const port = process.env.BACKEND_PORT || 4000;
+const port = process.env.PORT || 4000;
 server.listen(port, '0.0.0.0', () => {
-  console.log(`🚀 Server listening on http://0.0.0.0:${port}`);
-  console.log(`📡 IPv4 Test: curl http://127.0.0.1:${port}/ping`);
-  console.log(`📡 Localhost Test: curl http://localhost:${port}/ping`);
+  console.log(`🚀 Server listening on port ${port}`);
 });
