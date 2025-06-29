@@ -27,15 +27,18 @@ dotenvFlow.config();
 
 const app = express();
 app.use(cors({
-  origin: ['https://qusis-demo-day-1.onrender.com', 'http://localhost:5173'],
+  origin: ['https://qusis-demo-day-1.onrender.com', 'http://localhost:5173', 'http://localhost:4000'],
   credentials: true
 }));
 app.use(express.json({ limit: '150mb' }));
 app.use(express.urlencoded({ limit: '150mb', extended: true }));
 
-// 静的ファイルを配信（本番環境用）
+// 静的ファイルを配信（HTML/CSS/JS版）
+app.use(express.static(path.join(__dirname, '../public')));
+
+// 本番環境での追加設定（React dist用）
 if (process.env.NODE_ENV === 'production') {
-  app.use(express.static(path.join(__dirname, '../dist')));
+  app.use('/react', express.static(path.join(__dirname, '../dist')));
 }
 
 // ping エンドポイント
@@ -51,9 +54,46 @@ app.use('/api/tips', tipsRoutes);
 app.use('/api/messages', messagesRoutes);
 app.use('/api/contributions', contributionsRoutes);
 
-// React アプリを配信（本番環境用）
+// HTMLページのルーティング
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, '../public/index.html'));
+});
+
+app.get('/register', (req, res) => {
+  res.sendFile(path.join(__dirname, '../public/register.html'));
+});
+
+app.get('/login', (req, res) => {
+  res.sendFile(path.join(__dirname, '../public/login.html'));
+});
+
+app.get('/home', (req, res) => {
+  res.sendFile(path.join(__dirname, '../public/home.html'));
+});
+
+app.get('/pitch/:id', (req, res) => {
+  res.sendFile(path.join(__dirname, '../public/pitch-detail.html'));
+});
+
+app.get('/pitch-management', (req, res) => {
+  res.sendFile(path.join(__dirname, '../public/pitch-management.html'));
+});
+
+app.get('/coin', (req, res) => {
+  res.sendFile(path.join(__dirname, '../public/coin.html'));
+});
+
+app.get('/admin', (req, res) => {
+  res.sendFile(path.join(__dirname, '../public/admin.html'));
+});
+
+app.get('/usage', (req, res) => {
+  res.sendFile(path.join(__dirname, '../public/usage.html'));
+});
+
+// React版への切り替えルート（デバッグ用）
 if (process.env.NODE_ENV === 'production') {
-  app.get('*', (req, res) => {
+  app.get('/react/*', (req, res) => {
     res.sendFile(path.join(__dirname, '../dist/index.html'));
   });
 }
@@ -62,7 +102,7 @@ if (process.env.NODE_ENV === 'production') {
 const server = http.createServer(app);
 const io = new IOServer(server, { 
   cors: { 
-    origin: ['https://qusis-demo-day-1.onrender.com', 'http://localhost:5173'],
+    origin: ['https://qusis-demo-day-1.onrender.com', 'http://localhost:5173', 'http://localhost:4000'],
     methods: ["GET", "POST"],
     credentials: true
   } 
@@ -98,4 +138,6 @@ io.on('connection', async socket => {
 const port = process.env.PORT || 4000;
 server.listen(port, '0.0.0.0', () => {
   console.log(`🚀 Server listening on port ${port}`);
+  console.log(`📱 HTML版: http://localhost:${port}`);
+  console.log(`⚛️  React版: http://localhost:${port}/react`);
 });

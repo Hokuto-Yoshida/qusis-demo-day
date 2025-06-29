@@ -1,0 +1,1223 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理者ダッシュボード - QUSIS デモデイ</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #f9fafb;
+            color: #111827;
+            line-height: 1.5;
+        }
+        
+        .container {
+            max-width: 80rem;
+            margin: 0 auto;
+            padding: 2rem 1rem;
+        }
+        
+        .header {
+            margin-bottom: 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        
+        @media (min-width: 640px) {
+            .header {
+                flex-direction: row;
+                justify-content: space-between;
+                align-items: center;
+            }
+        }
+        
+        .header-content {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        
+        .header-icon {
+            width: 2.5rem;
+            height: 2.5rem;
+            background: #eab308;
+            border-radius: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .header-icon svg {
+            width: 1.5rem;
+            height: 1.5rem;
+            color: white;
+        }
+        
+        .header-text h1 {
+            font-size: 1.875rem;
+            font-weight: bold;
+            color: #111827;
+        }
+        
+        .header-text p {
+            color: #6b7280;
+        }
+        
+        .reset-button {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: #fef2f2;
+            color: #b91c1c;
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            font-size: 0.875rem;
+        }
+        
+        .reset-button:hover {
+            background: #fecaca;
+        }
+        
+        .reset-icon {
+            width: 1rem;
+            height: 1rem;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        @media (min-width: 768px) {
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        
+        @media (min-width: 1024px) {
+            .stats-grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
+        }
+        
+        .stat-card {
+            background: white;
+            border-radius: 0.5rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e5e7eb;
+            padding: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .stat-content p:first-child {
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: #6b7280;
+            margin-bottom: 0.25rem;
+        }
+        
+        .stat-value {
+            font-size: 1.875rem;
+            font-weight: bold;
+            color: #111827;
+        }
+        
+        .stat-icon {
+            width: 2rem;
+            height: 2rem;
+        }
+        
+        .stat-icon.green {
+            color: #16a34a;
+        }
+        
+        .stat-icon.blue {
+            color: #2563eb;
+        }
+        
+        .stat-icon.purple {
+            color: #7c3aed;
+        }
+        
+        .stat-icon.orange {
+            color: #ea580c;
+        }
+        
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+        
+        @media (min-width: 1024px) {
+            .main-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        
+        .panel {
+            background: white;
+            border-radius: 0.5rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e5e7eb;
+        }
+        
+        .panel-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .panel-icon {
+            width: 1.25rem;
+            height: 1.25rem;
+        }
+        
+        .panel-icon.purple {
+            color: #7c3aed;
+        }
+        
+        .panel-icon.green {
+            color: #16a34a;
+        }
+        
+        .panel-icon.gray {
+            color: #6b7280;
+        }
+        
+        .panel-icon.blue {
+            color: #2563eb;
+        }
+        
+        .panel-title {
+            font-size: 1.25rem;
+            font-weight: bold;
+            color: #111827;
+        }
+        
+        .panel-content {
+            padding: 1.5rem;
+        }
+        
+        .event-item {
+            border: 1px solid #e5e7eb;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+        
+        .event-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 0.5rem;
+        }
+        
+        .event-title {
+            font-weight: 600;
+            color: #111827;
+        }
+        
+        .event-team {
+            font-size: 0.875rem;
+            color: #7c3aed;
+        }
+        
+        .event-status {
+            padding: 0.25rem 0.5rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+        }
+        
+        .event-status.live {
+            background: #fef2f2;
+            color: #b91c1c;
+        }
+        
+        .event-status.ended {
+            background: #f3f4f6;
+            color: #1f2937;
+        }
+        
+        .event-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            font-size: 0.875rem;
+            color: #6b7280;
+            margin-bottom: 0.5rem;
+        }
+        
+        .event-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .btn {
+            padding: 0.25rem 0.75rem;
+            border-radius: 0.25rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+            font-size: 0.875rem;
+            border: none;
+        }
+        
+        .btn-start {
+            background: #16a34a;
+            color: white;
+        }
+        
+        .btn-start:hover {
+            background: #15803d;
+        }
+        
+        .btn-end {
+            background: #dc2626;
+            color: white;
+        }
+        
+        .btn-end:hover {
+            background: #b91c1c;
+        }
+        
+        .btn-delete {
+            background: #fef2f2;
+            color: #b91c1c;
+        }
+        
+        .btn-delete:hover {
+            background: #fecaca;
+        }
+        
+        .btn-icon {
+            width: 0.75rem;
+            height: 0.75rem;
+        }
+        
+        .gift-list {
+            max-height: 20rem;
+            overflow-y: auto;
+        }
+        
+        .gift-item {
+            padding: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        
+        .gift-item:last-child {
+            border-bottom: none;
+        }
+        
+        .gift-left {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        
+        .gift-avatar {
+            width: 2rem;
+            height: 2rem;
+            background: #dbeafe;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .gift-avatar svg {
+            width: 1rem;
+            height: 1rem;
+            color: #2563eb;
+        }
+        
+        .gift-info {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .gift-user {
+            font-weight: 500;
+            color: #111827;
+        }
+        
+        .gift-time {
+            font-size: 0.875rem;
+            color: #6b7280;
+        }
+        
+        .gift-right {
+            text-align: right;
+        }
+        
+        .gift-amount {
+            font-size: 1.125rem;
+            font-weight: bold;
+            color: #16a34a;
+        }
+        
+        .gift-event {
+            font-size: 0.75rem;
+            color: #6b7280;
+        }
+        
+        .contribution-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1rem;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
+        }
+        
+        .contribution-left {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .contribution-avatar {
+            width: 2.5rem;
+            height: 2.5rem;
+            background: #f0fdfa;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .contribution-avatar svg {
+            width: 1.25rem;
+            height: 1.25rem;
+            color: #14b8a6;
+        }
+        
+        .contribution-info {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .contribution-user {
+            font-weight: 500;
+            color: #111827;
+        }
+        
+        .contribution-details {
+            font-size: 0.875rem;
+            color: #6b7280;
+        }
+        
+        .contribution-time {
+            font-size: 0.75rem;
+            color: #6b7280;
+        }
+        
+        .contribution-amount {
+            font-size: 1.125rem;
+            font-weight: bold;
+            color: #14b8a6;
+        }
+        
+        .user-table {
+            width: 100%;
+            overflow-x: auto;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        thead {
+            background: #f9fafb;
+        }
+        
+        th {
+            padding: 0.75rem 1.5rem;
+            text-align: left;
+            font-size: 0.75rem;
+            font-weight: 500;
+            color: #6b7280;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        tbody {
+            background: white;
+        }
+        
+        td {
+            padding: 1rem 1.5rem;
+            white-space: nowrap;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        
+        tr:hover {
+            background: #f9fafb;
+        }
+        
+        .role-badges {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .role-badge {
+            padding: 0.25rem 0.5rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+        
+        .role-admin {
+            background: #fef2f2;
+            color: #b91c1c;
+        }
+        
+        .role-presenter {
+            background: #f0fdf4;
+            color: #166534;
+        }
+        
+        .role-viewer {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+        
+        .team-badge {
+            background: #f3e8ff;
+            color: #7c3aed;
+        }
+        
+        .balance {
+            color: #16a34a;
+            font-weight: 600;
+        }
+        
+        .delete-user-btn {
+            color: #dc2626;
+            background: none;
+            border: none;
+            padding: 0.25rem;
+            border-radius: 0.25rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .delete-user-btn:hover {
+            background: #fef2f2;
+            color: #b91c1c;
+        }
+        
+        .delete-user-icon {
+            width: 1rem;
+            height: 1rem;
+        }
+        
+        .admin-label {
+            color: #9ca3af;
+            font-size: 0.875rem;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 2rem 0;
+            color: #6b7280;
+        }
+        
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem;
+        }
+        
+        .spinner {
+            width: 2rem;
+            height: 2rem;
+            border: 2px solid #e5e7eb;
+            border-top: 2px solid #14b8a6;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Loading State -->
+        <div id="loading" class="loading">
+            <div class="spinner"></div>
+        </div>
+
+        <!-- Main Content -->
+        <div id="main-content" class="hidden">
+            <!-- Header -->
+            <div class="header">
+                <div class="header-content">
+                    <div class="header-icon">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"/>
+                        </svg>
+                    </div>
+                    <div class="header-text">
+                        <h1>QUcoin 運営ダッシュボード</h1>
+                        <p>QUSIS ゼロイチピッチイベント管理</p>
+                    </div>
+                </div>
+                <button class="reset-button" onclick="handleResetHistory()">
+                    <svg class="reset-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                    </svg>
+                    <span>履歴リセット</span>
+                </button>
+            </div>
+
+            <!-- Stats Cards -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-content">
+                        <p>総ギフト額</p>
+                        <p class="stat-value" id="total-gifts">0 QUcoin</p>
+                    </div>
+                    <svg class="stat-icon green" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+                    </svg>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-content">
+                        <p>登録ユーザー数</p>
+                        <p class="stat-value" id="total-users">0 人</p>
+                    </div>
+                    <svg class="stat-icon blue" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"/>
+                    </svg>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-content">
+                        <p>アクティブイベント</p>
+                        <p class="stat-value" id="active-events">0 件</p>
+                    </div>
+                    <svg class="stat-icon purple" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1m4 0h1m-6 4h8m-10-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-content">
+                        <p>総参加者数</p>
+                        <p class="stat-value" id="total-viewers">0 人</p>
+                    </div>
+                    <svg class="stat-icon orange" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                    </svg>
+                </div>
+            </div>
+
+            <div class="main-grid">
+                <!-- Active Events List -->
+                <div class="panel">
+                    <div class="panel-header">
+                        <svg class="panel-icon purple" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1m4 0h1m-6 4h8m-10-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        <h2 class="panel-title">アクティブイベント</h2>
+                    </div>
+                    <div class="panel-content">
+                        <div id="events-list">
+                            <!-- Events will be inserted here -->
+                        </div>
+                        <div id="empty-events" class="empty-state hidden">
+                            アクティブなイベントはありません
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Gifts -->
+                <div class="panel">
+                    <div class="panel-header">
+                        <svg class="panel-icon green" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+                        </svg>
+                        <h2 class="panel-title">最近のギフト送信</h2>
+                    </div>
+                    <div class="panel-content">
+                        <div class="gift-list" id="gifts-list">
+                            <!-- Gifts will be inserted here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Time Contribution History -->
+            <div class="panel" style="margin-bottom: 2rem;">
+                <div class="panel-header">
+                    <svg class="panel-icon gray" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    <h2 class="panel-title">時間貢献履歴</h2>
+                </div>
+                <div class="panel-content">
+                    <div id="contributions-list">
+                        <!-- Contributions will be inserted here -->
+                    </div>
+                    <div id="empty-contributions" class="empty-state hidden">
+                        時間貢献を行ったユーザーはまだいません
+                    </div>
+                </div>
+            </div>
+
+            <!-- User Management -->
+            <div class="panel">
+                <div class="panel-header">
+                    <svg class="panel-icon blue" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"/>
+                    </svg>
+                    <h2 class="panel-title">ユーザー管理</h2>
+                </div>
+                <div class="panel-content">
+                    <div class="user-table">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>ユーザー名</th>
+                                    <th>メール</th>
+                                    <th>残高</th>
+                                    <th>登録日</th>
+                                    <th>ステータス</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="users-table-body">
+                                <!-- Users will be inserted here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // グローバル変数
+        let currentUser = null;
+        let pitches = [];
+        let users = [];
+        let recentGifts = [];
+        let timeContributions = [];
+        let socket = null;
+
+        // 認証チェック
+        function checkAuth() {
+            const token = localStorage.getItem('authToken');
+            const userStr = localStorage.getItem('user');
+            
+            if (!token || !userStr) {
+                window.location.href = 'login.html';
+                return false;
+            }
+            
+            try {
+                currentUser = JSON.parse(userStr);
+                // 管理者以外はアクセス不可
+                if (currentUser.role !== 'admin') {
+                    alert('このページは管理者のみアクセス可能です');
+                    window.location.href = 'home.html';
+                    return false;
+                }
+                return true;
+            } catch (error) {
+                console.error('ユーザー情報の解析に失敗:', error);
+                window.location.href = 'login.html';
+                return false;
+            }
+        }
+
+        // 管理者統計データを取得
+        async function loadAdminStats() {
+            try {
+                const token = localStorage.getItem('authToken');
+                
+                // 総ギフト額取得
+                const giftsResponse = await fetch('/api/admin/total-coins', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (giftsResponse.ok) {
+                    const giftsData = await giftsResponse.json();
+                    document.getElementById('total-gifts').textContent = 
+                        `${giftsData.total.toLocaleString()} QUcoin`;
+                }
+
+                // ユーザー一覧取得
+                const usersResponse = await fetch('/api/admin/users', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (usersResponse.ok) {
+                    users = await usersResponse.json();
+                    document.getElementById('total-users').textContent = `${users.length} 人`;
+                    displayUsers();
+                }
+
+                // ピッチデータ取得
+                const pitchesResponse = await fetch('/api/pitches', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (pitchesResponse.ok) {
+                    pitches = await pitchesResponse.json();
+                    updatePitchStats();
+                    displayEvents();
+                }
+
+                // 時間貢献履歴取得
+                const contributionsResponse = await fetch('/api/admin/time-contributions', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (contributionsResponse.ok) {
+                    timeContributions = await contributionsResponse.json();
+                    displayContributions();
+                }
+
+                // 最近のギフト取得（サンプルデータ）
+                loadRecentGifts();
+
+            } catch (error) {
+                console.error('管理者データの取得エラー:', error);
+            }
+        }
+
+        // ピッチ統計を更新
+        function updatePitchStats() {
+            const activeEvents = pitches.filter(p => p.status === 'live').length;
+            const totalViewers = pitches.reduce((sum, p) => sum + (p.participants || 0), 0);
+            
+            document.getElementById('active-events').textContent = `${activeEvents} 件`;
+            document.getElementById('total-viewers').textContent = `${totalViewers} 人`;
+        }
+
+        // イベント一覧を表示
+        function displayEvents() {
+            const container = document.getElementById('events-list');
+            const emptyState = document.getElementById('empty-events');
+
+            if (pitches.length === 0) {
+                container.innerHTML = '';
+                emptyState.classList.remove('hidden');
+                return;
+            }
+
+            emptyState.classList.add('hidden');
+            container.innerHTML = pitches.map(pitch => createEventItem(pitch)).join('');
+        }
+
+        // イベントアイテムを作成
+        function createEventItem(pitch) {
+            const statusClass = pitch.status === 'live' ? 'live' : 'ended';
+            const statusText = pitch.status === 'live' ? 'LIVE' : '終了';
+            
+            return `
+                <div class="event-item">
+                    <div class="event-header">
+                        <div>
+                            <h3 class="event-title">${pitch.title}</h3>
+                            <p class="event-team">チーム: ${pitch.team}</p>
+                        </div>
+                        <span class="event-status ${statusClass}">${statusText}</span>
+                    </div>
+                    <div class="event-stats">
+                        <div>参加者: <strong>${pitch.participants || 0}</strong></div>
+                        <div>ギフト総額: <strong>${pitch.totalTips || 0}</strong></div>
+                        <div>ID: <strong>#${pitch._id}</strong></div>
+                    </div>
+                    <div class="event-actions">
+                        ${getStatusButton(pitch)}
+                        <button class="btn btn-delete" onclick="handleDeletePitch('${pitch._id}', '${pitch.title}')">
+                            <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                            </svg>
+                            <span>削除</span>
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        // ステータスボタンを取得
+        function getStatusButton(pitch) {
+            if (pitch.status === 'upcoming') {
+                return `
+                    <button class="btn btn-start" onclick="handleStatusChange('${pitch._id}', 'live')">
+                        <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1m4 0h1m-6 4h8m-10-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        <span>開始</span>
+                    </button>
+                `;
+            }
+            if (pitch.status === 'live') {
+                return `
+                    <button class="btn btn-end" onclick="handleStatusChange('${pitch._id}', 'ended')">
+                        <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        <span>終了</span>
+                    </button>
+                `;
+            }
+            return '<span class="admin-label">終了済み</span>';
+        }
+
+        // ステータス変更
+        async function handleStatusChange(pitchId, newStatus) {
+            try {
+                const token = localStorage.getItem('authToken');
+                const response = await fetch(`/api/pitches/${pitchId}/status`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ status: newStatus })
+                });
+
+                if (response.ok) {
+                    // ローカルデータを更新
+                    const index = pitches.findIndex(p => p._id === pitchId);
+                    if (index !== -1) {
+                        pitches[index].status = newStatus;
+                        updatePitchStats();
+                        displayEvents();
+                    }
+                    alert('ステータスを更新しました');
+                } else {
+                    alert('ステータスの更新に失敗しました');
+                }
+            } catch (error) {
+                console.error('ステータス更新エラー:', error);
+                alert('ステータスの更新に失敗しました');
+            }
+        }
+
+        // ピッチ削除
+        async function handleDeletePitch(pitchId, title) {
+            if (!confirm(`「${title}」を削除しますか？`)) return;
+
+            try {
+                const token = localStorage.getItem('authToken');
+                const response = await fetch(`/api/pitches/${pitchId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    pitches = pitches.filter(p => p._id !== pitchId);
+                    updatePitchStats();
+                    displayEvents();
+                    alert('ピッチを削除しました');
+                } else {
+                    alert('ピッチの削除に失敗しました');
+                }
+            } catch (error) {
+                console.error('ピッチ削除エラー:', error);
+                alert('ピッチの削除に失敗しました');
+            }
+        }
+
+        // 最近のギフトを読み込み（サンプルデータ）
+        function loadRecentGifts() {
+            recentGifts = [
+                { id: 1, user: 'ユーザー#4', amount: 100, timestamp: '2025/6/26 16:59:35', event: 'イベント#1' },
+                { id: 2, user: 'ユーザー#4', amount: 20,  timestamp: '2025/6/26 11:28:34', event: 'イベント#1' },
+                { id: 3, user: 'ユーザー#4', amount: 100, timestamp: '2025/6/26 11:28:22', event: 'イベント#1' },
+                { id: 4, user: 'ユーザー#4', amount: 100, timestamp: '2025/6/26 11:25:12', event: 'イベント#1' },
+                { id: 5, user: 'ユーザー#4', amount: 200, timestamp: '2025/6/25 10:51:19', event: 'イベント#1' },
+                { id: 6, user: 'ユーザー#4', amount: 50,  timestamp: '2025/6/25 10:51:11', event: 'イベント#1' }
+            ];
+            displayGifts();
+        }
+
+        // ギフト一覧を表示
+        function displayGifts() {
+            const container = document.getElementById('gifts-list');
+            container.innerHTML = recentGifts.map(gift => createGiftItem(gift)).join('');
+        }
+
+        // ギフトアイテムを作成
+        function createGiftItem(gift) {
+            return `
+                <div class="gift-item">
+                    <div class="gift-left">
+                        <div class="gift-avatar">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"/>
+                            </svg>
+                        </div>
+                        <div class="gift-info">
+                            <div class="gift-user">${gift.user}</div>
+                            <div class="gift-time">${gift.timestamp}</div>
+                        </div>
+                    </div>
+                    <div class="gift-right">
+                        <div class="gift-amount">+${gift.amount} QUcoin</div>
+                        <div class="gift-event">${gift.event}</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // 時間貢献履歴を表示
+        function displayContributions() {
+            const container = document.getElementById('contributions-list');
+            const emptyState = document.getElementById('empty-contributions');
+
+            if (timeContributions.length === 0) {
+                container.innerHTML = '';
+                emptyState.classList.remove('hidden');
+                return;
+            }
+
+            emptyState.classList.add('hidden');
+            container.innerHTML = timeContributions.map(contribution => createContributionItem(contribution)).join('');
+        }
+
+        // 時間貢献アイテムを作成
+        function createContributionItem(contribution) {
+            const time = new Date(contribution.createdAt).toLocaleString('ja-JP');
+            
+            return `
+                <div class="contribution-item">
+                    <div class="contribution-left">
+                        <div class="contribution-avatar">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"/>
+                            </svg>
+                        </div>
+                        <div class="contribution-info">
+                            <div class="contribution-user">${contribution.userName}</div>
+                            <div class="contribution-details">${contribution.type} – ${contribution.hours}時間</div>
+                            <div class="contribution-time">${time}</div>
+                        </div>
+                    </div>
+                    <div class="contribution-amount">+${contribution.coins} QUcoin</div>
+                </div>
+            `;
+        }
+
+        // ユーザー一覧を表示
+        function displayUsers() {
+            const tbody = document.getElementById('users-table-body');
+            tbody.innerHTML = users.map(user => createUserRow(user)).join('');
+        }
+
+        // ユーザー行を作成
+        function createUserRow(user) {
+            const registrationDate = new Date(user.createdAt).toLocaleDateString('ja-JP');
+            const roleBadges = getRoleBadges(user.role, user.team);
+            const actionButton = user.role !== 'admin' ? 
+                `<button class="delete-user-btn" onclick="handleDeleteUser('${user._id}', '${user.name}')">
+                    <svg class="delete-user-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7a6 6 0 1 0 0 12h6m-6-6h12"/>
+                    </svg>
+                </button>` : 
+                '<span class="admin-label">管理者</span>';
+
+            return `
+                <tr>
+                    <td>${user.name}</td>
+                    <td>${user.email}</td>
+                    <td class="balance">${(user.coinBalance || 0).toLocaleString()} QUcoin</td>
+                    <td>${registrationDate}</td>
+                    <td>${roleBadges}</td>
+                    <td>${actionButton}</td>
+                </tr>
+            `;
+        }
+
+        // ロールバッジを取得
+        function getRoleBadges(role, team) {
+            const roleConfigs = {
+                admin: { class: 'role-admin', label: 'admin' },
+                presenter: { class: 'role-presenter', label: 'presenter' },
+                viewer: { class: 'role-viewer', label: 'viewer' }
+            };
+
+            const config = roleConfigs[role] || { class: 'role-viewer', label: role };
+            let badges = `<span class="role-badge ${config.class}">${config.label}</span>`;
+            
+            if (team) {
+                badges += `<span class="role-badge team-badge">${team}</span>`;
+            }
+            
+            return `<div class="role-badges">${badges}</div>`;
+        }
+
+        // ユーザー削除
+        async function handleDeleteUser(userId, name) {
+            if (!confirm(`ユーザー「${name}」を削除しますか？`)) return;
+
+            try {
+                const token = localStorage.getItem('authToken');
+                const response = await fetch(`/api/admin/users/${userId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    users = users.filter(u => u._id !== userId);
+                    displayUsers();
+                    document.getElementById('total-users').textContent = `${users.length} 人`;
+                    alert('ユーザーを削除しました');
+                } else {
+                    alert('ユーザーの削除に失敗しました');
+                }
+            } catch (error) {
+                console.error('ユーザー削除エラー:', error);
+                alert('ユーザーの削除に失敗しました');
+            }
+        }
+
+        // 履歴リセット
+        async function handleResetHistory() {
+            if (!confirm('時間貢献履歴をリセットしますか？')) return;
+
+            try {
+                const token = localStorage.getItem('authToken');
+                const response = await fetch('/api/admin/reset-time-contributions', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    timeContributions = [];
+                    displayContributions();
+                    alert('履歴をリセットしました');
+                } else {
+                    alert('リセットに失敗しました');
+                }
+            } catch (error) {
+                console.error('履歴リセットエラー:', error);
+                alert('リセットに失敗しました');
+            }
+        }
+
+        // Socket.IO接続を初期化
+        function initializeSocket() {
+            try {
+                if (typeof io !== 'undefined') {
+                    socket = io();
+                    
+                    // リアルタイム総ギフト額更新
+                    socket.on('total-coins-updated', (sum) => {
+                        document.getElementById('total-gifts').textContent = 
+                            `${sum.toLocaleString()} QUcoin`;
+                    });
+
+                    // 新しいピッチの通知
+                    socket.on('pitch-created', (newPitch) => {
+                        pitches.push(newPitch);
+                        updatePitchStats();
+                        displayEvents();
+                    });
+
+                    // ピッチ更新の通知
+                    socket.on('pitch-updated', (updatedPitch) => {
+                        const index = pitches.findIndex(p => p._id === updatedPitch._id);
+                        if (index !== -1) {
+                            pitches[index] = updatedPitch;
+                            updatePitchStats();
+                            displayEvents();
+                        }
+                    });
+
+                    // 新しいユーザー登録の通知
+                    socket.on('user-registered', (newUser) => {
+                        users.push(newUser);
+                        displayUsers();
+                        document.getElementById('total-users').textContent = `${users.length} 人`;
+                    });
+                }
+            } catch (error) {
+                console.log('Socket.IO接続をスキップ:', error);
+            }
+        }
+
+        // Socket.IO接続を切断
+        function disconnectSocket() {
+            if (socket) {
+                socket.disconnect();
+            }
+        }
+
+        // ページ読み込み時の初期化
+        window.addEventListener('load', async () => {
+            if (!checkAuth()) return;
+            
+            await loadAdminStats();
+            initializeSocket();
+            
+            document.getElementById('loading').classList.add('hidden');
+            document.getElementById('main-content').classList.remove('hidden');
+        });
+
+        // ページ離脱時の処理
+        window.addEventListener('beforeunload', () => {
+            disconnectSocket();
+        });
+    </script>
+</body>
+</html>

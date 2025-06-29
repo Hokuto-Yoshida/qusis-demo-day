@@ -1,0 +1,1103 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ピッチ詳細 - QUSIS デモデイ</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #f9fafb;
+            color: #111827;
+            line-height: 1.5;
+        }
+        
+        .container {
+            max-width: 80rem;
+            margin: 0 auto;
+            padding: 2rem 1rem;
+        }
+        
+        .header {
+            margin-bottom: 1.5rem;
+        }
+        
+        .back-button {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: #6b7280;
+            text-decoration: none;
+            margin-bottom: 1rem;
+            font-size: 0.875rem;
+            transition: color 0.2s;
+            background: none;
+            border: none;
+            cursor: pointer;
+        }
+        
+        .back-button:hover {
+            color: #1f2937;
+        }
+        
+        .back-icon {
+            width: 1rem;
+            height: 1rem;
+        }
+        
+        .page-title {
+            font-size: 1.875rem;
+            font-weight: bold;
+            color: #111827;
+            margin-bottom: 0.5rem;
+        }
+        
+        .page-description {
+            color: #6b7280;
+        }
+        
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 2rem;
+        }
+        
+        @media (min-width: 1024px) {
+            .main-grid {
+                grid-template-columns: 2fr 1fr;
+            }
+        }
+        
+        .left-column {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+        
+        .right-column {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 0.5rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e5e7eb;
+            overflow: hidden;
+        }
+        
+        .pitch-info {
+            /* ピッチ情報カードのスタイル */
+        }
+        
+        .cover-image {
+            height: 16rem;
+            background: linear-gradient(135deg, #14b8a6, #2563eb);
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .cover-placeholder {
+            text-align: center;
+            color: white;
+        }
+        
+        .cover-icon {
+            width: 4rem;
+            height: 4rem;
+            margin: 0 auto 1rem;
+        }
+        
+        .cover-team {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+        
+        .cover-status {
+            font-size: 0.875rem;
+            opacity: 0.9;
+        }
+        
+        .status-badge {
+            position: absolute;
+            top: 1rem;
+            left: 1rem;
+            background: rgba(0, 0, 0, 0.5);
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.875rem;
+        }
+        
+        .pitch-content {
+            padding: 1.5rem;
+        }
+        
+        .pitch-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+        }
+        
+        .team-badge {
+            background: #f3e8ff;
+            color: #7c3aed;
+            font-size: 0.875rem;
+            font-weight: 500;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+        }
+        
+        .pitch-id {
+            color: #6b7280;
+            font-size: 0.875rem;
+        }
+        
+        .total-tips {
+            background: #fef3c7;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .total-tips-content {
+            text-align: center;
+        }
+        
+        .total-amount {
+            font-size: 1.875rem;
+            font-weight: bold;
+            color: #92400e;
+            margin-bottom: 0.5rem;
+        }
+        
+        .total-label {
+            color: #a16207;
+            font-size: 0.875rem;
+        }
+        
+        .total-unit {
+            color: #d97706;
+            font-size: 0.75rem;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+            text-align: center;
+        }
+        
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .stat-header {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+            color: #6b7280;
+            margin-bottom: 0.25rem;
+        }
+        
+        .stat-header.purple {
+            color: #7c3aed;
+        }
+        
+        .stat-icon {
+            width: 1rem;
+            height: 1rem;
+        }
+        
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #111827;
+        }
+        
+        .stat-value.purple {
+            color: #7c3aed;
+        }
+        
+        .stat-unit {
+            color: #6b7280;
+            font-size: 0.875rem;
+        }
+        
+        .chat-section {
+            /* チャットセクションのスタイル */
+        }
+        
+        .section-header {
+            padding: 1rem;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .section-icon {
+            width: 1.25rem;
+            height: 1.25rem;
+            color: #14b8a6;
+        }
+        
+        .section-title {
+            font-weight: 600;
+            color: #111827;
+        }
+        
+        .chat-messages {
+            height: 16rem;
+            overflow-y: auto;
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+        
+        .message {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+        }
+        
+        .message-avatar {
+            width: 2rem;
+            height: 2rem;
+            background: #14b8a6;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        
+        .avatar-text {
+            color: white;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+        
+        .message-content {
+            flex: 1;
+        }
+        
+        .message-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.25rem;
+        }
+        
+        .message-user {
+            font-weight: 500;
+            color: #111827;
+            font-size: 0.875rem;
+        }
+        
+        .message-time {
+            color: #6b7280;
+            font-size: 0.75rem;
+        }
+        
+        .message-text {
+            color: #374151;
+            font-size: 0.875rem;
+        }
+        
+        .chat-form {
+            border-top: 1px solid #e5e7eb;
+            padding: 1rem;
+        }
+        
+        .chat-input-container {
+            display: flex;
+            gap: 0.75rem;
+        }
+        
+        .chat-input {
+            flex: 1;
+            padding: 0.5rem 0.75rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+        }
+        
+        .chat-input:focus {
+            outline: none;
+            ring: 2px;
+            ring-color: #14b8a6;
+            border-color: #14b8a6;
+        }
+        
+        .chat-submit {
+            background: #14b8a6;
+            color: white;
+            padding: 0.5rem;
+            border: none;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        
+        .chat-submit:hover {
+            background: #0d9488;
+        }
+        
+        .chat-hint {
+            font-size: 0.75rem;
+            color: #6b7280;
+            margin-top: 0.25rem;
+        }
+        
+        .tip-section {
+            /* 投げ銭セクションのスタイル */
+        }
+        
+        .tip-disclaimer {
+            font-size: 0.75rem;
+            color: #2563eb;
+            background: #dbeafe;
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            border: 1px solid #93c5fd;
+            margin-bottom: 1rem;
+        }
+        
+        .tip-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+        
+        .tip-button {
+            padding: 0.75rem;
+            color: white;
+            border: none;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: opacity 0.2s;
+            text-align: center;
+        }
+        
+        .tip-button:hover {
+            opacity: 0.9;
+        }
+        
+        .tip-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .tip-1 { background: #14b8a6; }
+        .tip-2 { background: #0d9488; }
+        .tip-3 { background: #0f766e; }
+        .tip-4 { background: #134e4a; }
+        
+        .tip-label {
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+        
+        .tip-amount {
+            font-size: 1.125rem;
+            font-weight: bold;
+        }
+        
+        .balance-display {
+            text-align: center;
+            font-size: 0.875rem;
+            color: #6b7280;
+        }
+        
+        .ranking-section {
+            /* ランキングセクションのスタイル */
+        }
+        
+        .ranking-content {
+            padding: 1rem;
+        }
+        
+        .supporter-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 0.75rem;
+        }
+        
+        .supporter-left {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        
+        .rank-badge {
+            width: 1.5rem;
+            height: 1.5rem;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            font-weight: bold;
+        }
+        
+        .rank-1 {
+            background: #fef3c7;
+            color: #92400e;
+        }
+        
+        .rank-2 {
+            background: #f3f4f6;
+            color: #1f2937;
+        }
+        
+        .rank-3 {
+            background: #fed7aa;
+            color: #c2410c;
+        }
+        
+        .rank-other {
+            background: #f9fafb;
+            color: #6b7280;
+        }
+        
+        .supporter-name {
+            font-weight: 500;
+            color: #111827;
+        }
+        
+        .supporter-amount {
+            color: #14b8a6;
+            font-weight: 600;
+        }
+        
+        .empty-ranking {
+            text-align: center;
+            padding: 2rem 0;
+        }
+        
+        .empty-icon {
+            width: 3rem;
+            height: 3rem;
+            color: #9ca3af;
+            margin: 0 auto 1rem;
+        }
+        
+        .empty-text {
+            color: #6b7280;
+            margin-bottom: 0.25rem;
+        }
+        
+        .empty-subtext {
+            color: #9ca3af;
+            font-size: 0.875rem;
+        }
+        
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 50vh;
+        }
+        
+        .spinner {
+            width: 2rem;
+            height: 2rem;
+            border: 2px solid #e5e7eb;
+            border-top: 2px solid #14b8a6;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Loading State -->
+        <div id="loading" class="loading">
+            <div class="spinner"></div>
+        </div>
+
+        <!-- Main Content -->
+        <div id="main-content" class="hidden">
+            <!-- Header -->
+            <div class="header">
+                <button class="back-button" onclick="goHome()">
+                    <svg class="back-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+                    </svg>
+                    <span>ホームに戻る</span>
+                </button>
+                <h1 class="page-title" id="pitch-title">ピッチタイトル</h1>
+                <p class="page-description" id="pitch-description">ピッチの説明</p>
+            </div>
+
+            <div class="main-grid">
+                <!-- Left Column -->
+                <div class="left-column">
+                    <!-- Pitch Info -->
+                    <div class="card pitch-info">
+                        <div class="cover-image">
+                            <div class="cover-placeholder" id="cover-content">
+                                <svg class="cover-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                                </svg>
+                                <div class="cover-team" id="cover-team">チーム名</div>
+                                <div class="cover-status" id="cover-status">ステータス</div>
+                            </div>
+                            <div class="status-badge" id="status-badge">開始前</div>
+                        </div>
+                        <div class="pitch-content">
+                            <div class="pitch-header">
+                                <span class="team-badge" id="team-badge">チーム名</span>
+                                <span class="pitch-id" id="pitch-id">#ID</span>
+                            </div>
+                            <div class="total-tips">
+                                <div class="total-tips-content">
+                                    <div class="total-amount" id="total-amount">0</div>
+                                    <div class="total-label">総応援コイン</div>
+                                    <div class="total-unit">QUcoin</div>
+                                </div>
+                            </div>
+                            <div class="stats-grid">
+                                <div class="stat-item">
+                                    <div class="stat-header">
+                                        <svg class="stat-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"/>
+                                        </svg>
+                                        <span>観覧者</span>
+                                    </div>
+                                    <div class="stat-value" id="participants">0</div>
+                                    <div class="stat-unit">人</div>
+                                </div>
+                                <div class="stat-item">
+                                    <div class="stat-header purple">
+                                        <svg class="stat-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                        </svg>
+                                        <span>ステータス</span>
+                                    </div>
+                                    <div class="stat-value purple" id="status-display">開始前</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Chat -->
+                    <div class="card chat-section">
+                        <div class="section-header">
+                            <svg class="section-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+                            </svg>
+                            <h3 class="section-title">チャット</h3>
+                        </div>
+                        <div class="chat-messages" id="chat-messages">
+                            <!-- Messages will be inserted here -->
+                        </div>
+                        <form class="chat-form" id="chat-form">
+                            <div class="chat-input-container">
+                                <input
+                                    type="text"
+                                    id="message-input"
+                                    class="chat-input"
+                                    placeholder="応援メッセージを送る..."
+                                    required
+                                />
+                                <button type="submit" class="chat-submit">
+                                    <svg class="stat-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+                                    </svg>
+                                </button>
+                            </div>
+                            <p class="chat-hint">チャット参加で20 QUcoin獲得！</p>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Right Column -->
+                <div class="right-column">
+                    <!-- Tip Section -->
+                    <div class="card tip-section" id="tip-section">
+                        <div class="section-header">
+                            <svg class="section-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: #ea580c;">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v13m0-13V6a2 2 0 112 0v1m-2 0V5.5A1.5 1.5 0 0113.5 4h-3A1.5 1.5 0 019 5.5V6m3 2a4 4 0 00-4 4v6a1 1 0 001 1h6a1 1 0 001-1v-6a4 4 0 00-4-4z"/>
+                            </svg>
+                            <h3 class="section-title">応援の気持ちを投げ銭で表現しよう！</h3>
+                        </div>
+                        <div class="ranking-content">
+                            <div class="tip-disclaimer">
+                                ※この投げ銭は仮想的な表現です。金銭的取引は運営しません。
+                            </div>
+                            <div class="tip-grid">
+                                <button class="tip-button tip-1" onclick="sendTip(10)">
+                                    <div class="tip-label">応援</div>
+                                    <div class="tip-amount">10 QUcoin</div>
+                                </button>
+                                <button class="tip-button tip-2" onclick="sendTip(20)">
+                                    <div class="tip-label">頑張って！</div>
+                                    <div class="tip-amount">20 QUcoin</div>
+                                </button>
+                                <button class="tip-button tip-3" onclick="sendTip(50)">
+                                    <div class="tip-label">素晴らしい！</div>
+                                    <div class="tip-amount">50 QUcoin</div>
+                                </button>
+                                <button class="tip-button tip-4" onclick="sendTip(100)">
+                                    <div class="tip-label">最高！</div>
+                                    <div class="tip-amount">100 QUcoin</div>
+                                </button>
+                            </div>
+                            <div class="balance-display">
+                                残高: <span id="coin-balance">0</span> QUcoin
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Support Ranking -->
+                    <div class="card ranking-section">
+                        <div class="section-header">
+                            <svg class="section-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: #eab308;">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/>
+                            </svg>
+                            <h3 class="section-title">応援ランキング</h3>
+                        </div>
+                        <div class="ranking-content">
+                            <div id="supporters-list">
+                                <!-- Supporters will be inserted here -->
+                            </div>
+                            <div id="empty-ranking" class="empty-ranking hidden">
+                                <svg class="empty-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/>
+                                </svg>
+                                <p class="empty-text">まだサポーターがいません</p>
+                                <p class="empty-subtext">投げ銭で応援してみませんか？</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // グローバル変数
+        let currentPitch = null;
+        let currentUser = null;
+        let chatMessages = [];
+        let supporters = [];
+        let socket = null;
+
+        // URLからピッチIDを取得
+        function getPitchIdFromUrl() {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get('id');
+        }
+
+        // ホームに戻る
+        function goHome() {
+            window.location.href = 'home.html';
+        }
+
+        // 認証チェック
+        function checkAuth() {
+            const token = localStorage.getItem('authToken');
+            const userStr = localStorage.getItem('user');
+            
+            if (!token || !userStr) {
+                window.location.href = 'login.html';
+                return false;
+            }
+            
+            try {
+                currentUser = JSON.parse(userStr);
+                return true;
+            } catch (error) {
+                console.error('ユーザー情報の解析に失敗:', error);
+                window.location.href = 'login.html';
+                return false;
+            }
+        }
+
+        // ピッチデータを取得
+        async function loadPitchData(pitchId) {
+            try {
+                const token = localStorage.getItem('authToken');
+                const response = await fetch(`/api/pitches/${pitchId}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    currentPitch = await response.json();
+                    displayPitchInfo();
+                    loadChatMessages();
+                    loadSupporters();
+                    return true;
+                } else {
+                    console.error('ピッチデータの取得に失敗');
+                    return false;
+                }
+            } catch (error) {
+                console.error('ピッチデータの取得エラー:', error);
+                return false;
+            }
+        }
+
+        // ピッチ情報を表示
+        function displayPitchInfo() {
+            if (!currentPitch) return;
+
+            document.getElementById('pitch-title').textContent = currentPitch.title;
+            document.getElementById('pitch-description').textContent = currentPitch.description;
+            document.getElementById('cover-team').textContent = currentPitch.team;
+            document.getElementById('team-badge').textContent = currentPitch.team;
+            document.getElementById('pitch-id').textContent = `#${currentPitch._id}`;
+            document.getElementById('total-amount').textContent = currentPitch.totalTips || 0;
+            document.getElementById('participants').textContent = currentPitch.participants || 0;
+
+            // ステータス表示
+            const statusMap = {
+                'live': { text: 'LIVE', status: 'デモ進行中' },
+                'ended': { text: '終了', status: '終了しました' },
+                'upcoming': { text: '開始前', status: 'まもなく開始予定です' }
+            };
+            
+            const statusInfo = statusMap[currentPitch.status] || statusMap['upcoming'];
+            document.getElementById('status-badge').textContent = statusInfo.text;
+            document.getElementById('cover-status').textContent = statusInfo.status;
+            document.getElementById('status-display').textContent = statusInfo.text;
+
+            // 投げ銭セクションの表示制御（自チームの場合は非表示）
+            const tipSection = document.getElementById('tip-section');
+            if (currentUser && currentPitch.team === currentUser.team) {
+                tipSection.style.display = 'none';
+            }
+
+            // ユーザーのコイン残高表示
+            if (currentUser) {
+                document.getElementById('coin-balance').textContent = currentUser.coinBalance || 0;
+            }
+        }
+
+        // チャットメッセージを取得
+        async function loadChatMessages() {
+            try {
+                const token = localStorage.getItem('authToken');
+                const response = await fetch(`/api/messages/${currentPitch._id}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    chatMessages = await response.json();
+                    displayChatMessages();
+                }
+            } catch (error) {
+                console.error('チャットメッセージの取得エラー:', error);
+            }
+        }
+
+        // チャットメッセージを表示
+        function displayChatMessages() {
+            const container = document.getElementById('chat-messages');
+            container.innerHTML = '';
+
+            chatMessages.forEach(message => {
+                const messageEl = createMessageElement(message);
+                container.appendChild(messageEl);
+            });
+
+            // 最新メッセージにスクロール
+            container.scrollTop = container.scrollHeight;
+        }
+
+        // メッセージ要素を作成
+        function createMessageElement(message) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message';
+
+            const avatar = message.user.slice(0, 2).toUpperCase();
+            const time = new Date(message.createdAt).toLocaleTimeString('ja-JP');
+
+            messageDiv.innerHTML = `
+                <div class="message-avatar">
+                    <span class="avatar-text">${avatar}</span>
+                </div>
+                <div class="message-content">
+                    <div class="message-header">
+                        <span class="message-user">${message.user}</span>
+                        <span class="message-time">${time}</span>
+                    </div>
+                    <p class="message-text">${message.content}</p>
+                </div>
+            `;
+
+            return messageDiv;
+        }
+
+        // チャットメッセージ送信
+        async function sendMessage(content) {
+            try {
+                const token = localStorage.getItem('authToken');
+                const response = await fetch('/api/messages', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        pitchId: currentPitch._id,
+                        content: content
+                    })
+                });
+
+                if (response.ok) {
+                    const newMessage = await response.json();
+                    chatMessages.push(newMessage);
+                    displayChatMessages();
+                    
+                    // チャット参加でコイン獲得
+                    earnChatCoins();
+                    return true;
+                } else {
+                    console.error('メッセージ送信に失敗');
+                    return false;
+                }
+            } catch (error) {
+                console.error('メッセージ送信エラー:', error);
+                return false;
+            }
+        }
+
+        // チャット参加でコイン獲得
+        function earnChatCoins() {
+            if (currentUser) {
+                currentUser.coinBalance = (currentUser.coinBalance || 0) + 20;
+                localStorage.setItem('user', JSON.stringify(currentUser));
+                document.getElementById('coin-balance').textContent = currentUser.coinBalance;
+            }
+        }
+
+        // 投げ銭送信
+        async function sendTip(amount) {
+            if (!currentUser || currentUser.coinBalance < amount) {
+                alert('コインが不足しています');
+                return;
+            }
+
+            if (currentPitch.team === currentUser.team) {
+                alert('自分のチームには投げ銭できません');
+                return;
+            }
+
+            try {
+                const token = localStorage.getItem('authToken');
+                const response = await fetch('/api/tips', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        pitchId: currentPitch._id,
+                        amount: amount,
+                        message: ''
+                    })
+                });
+
+                if (response.ok) {
+                    // コイン残高を更新
+                    currentUser.coinBalance -= amount;
+                    localStorage.setItem('user', JSON.stringify(currentUser));
+                    document.getElementById('coin-balance').textContent = currentUser.coinBalance;
+                    
+                    // 投げ銭総額を更新
+                    currentPitch.totalTips = (currentPitch.totalTips || 0) + amount;
+                    document.getElementById('total-amount').textContent = currentPitch.totalTips;
+                    
+                    // サポーターランキングを更新
+                    loadSupporters();
+                    
+                    alert(`${amount} QUcoinを送信しました！`);
+                    return true;
+                } else {
+                    console.error('投げ銭送信に失敗');
+                    alert('投げ銭の送信に失敗しました');
+                    return false;
+                }
+            } catch (error) {
+                console.error('投げ銭送信エラー:', error);
+                alert('投げ銭の送信に失敗しました');
+                return false;
+            }
+        }
+
+        // サポーターランキングを取得
+        async function loadSupporters() {
+            try {
+                const token = localStorage.getItem('authToken');
+                const response = await fetch(`/api/tips/${currentPitch._id}/supporters`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    supporters = await response.json();
+                    displaySupporters();
+                }
+            } catch (error) {
+                console.error('サポーターランキングの取得エラー:', error);
+            }
+        }
+
+        // サポーターランキングを表示
+        function displaySupporters() {
+            const container = document.getElementById('supporters-list');
+            const emptyState = document.getElementById('empty-ranking');
+
+            if (supporters.length === 0) {
+                container.innerHTML = '';
+                emptyState.classList.remove('hidden');
+                return;
+            }
+
+            emptyState.classList.add('hidden');
+            container.innerHTML = '';
+
+            supporters.forEach((supporter, index) => {
+                const supporterEl = createSupporterElement(supporter, index);
+                container.appendChild(supporterEl);
+            });
+        }
+
+        // サポーター要素を作成
+        function createSupporterElement(supporter, index) {
+            const supporterDiv = document.createElement('div');
+            supporterDiv.className = 'supporter-item';
+
+            const rankClasses = ['rank-1', 'rank-2', 'rank-3'];
+            const rankClass = rankClasses[index] || 'rank-other';
+
+            supporterDiv.innerHTML = `
+                <div class="supporter-left">
+                    <div class="rank-badge ${rankClass}">${index + 1}</div>
+                    <span class="supporter-name">${supporter.user}</span>
+                </div>
+                <span class="supporter-amount">${supporter.amount} QU</span>
+            `;
+
+            return supporterDiv;
+        }
+
+        // Socket.IO接続を初期化
+        function initializeSocket() {
+            try {
+                // Socket.ioが利用可能な場合のみ接続
+                if (typeof io !== 'undefined') {
+                    socket = io();
+                    
+                    // ルームに参加
+                    socket.emit('join-room', currentPitch._id);
+                    
+                    // リアルタイムイベントリスナー
+                    socket.on('new-message', (message) => {
+                        chatMessages.push(message);
+                        displayChatMessages();
+                    });
+                    
+                    socket.on('new-tip', (tip) => {
+                        // 投げ銭総額を更新
+                        currentPitch.totalTips = (currentPitch.totalTips || 0) + tip.amount;
+                        document.getElementById('total-amount').textContent = currentPitch.totalTips;
+                        
+                        // サポーターランキングを更新
+                        loadSupporters();
+                    });
+                }
+            } catch (error) {
+                console.log('Socket.IO接続をスキップ:', error);
+            }
+        }
+
+        // Socket.IO接続を切断
+        function disconnectSocket() {
+            if (socket) {
+                socket.emit('leave-room', currentPitch._id);
+                socket.disconnect();
+            }
+        }
+
+        // チャットフォーム送信イベント
+        document.getElementById('chat-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const input = document.getElementById('message-input');
+            const content = input.value.trim();
+            
+            if (!content) return;
+            
+            const success = await sendMessage(content);
+            if (success) {
+                input.value = '';
+            }
+        });
+
+        // ページ読み込み時の初期化
+        window.addEventListener('load', async () => {
+            if (!checkAuth()) return;
+            
+            const pitchId = getPitchIdFromUrl();
+            if (!pitchId) {
+                alert('ピッチIDが指定されていません');
+                goHome();
+                return;
+            }
+            
+            const success = await loadPitchData(pitchId);
+            if (success) {
+                initializeSocket();
+                document.getElementById('loading').classList.add('hidden');
+                document.getElementById('main-content').classList.remove('hidden');
+            } else {
+                alert('ピッチデータの読み込みに失敗しました');
+                goHome();
+            }
+        });
+
+        // ページ離脱時の処理
+        window.addEventListener('beforeunload', () => {
+            disconnectSocket();
+        });
+    </script>
+</body>
+</html>

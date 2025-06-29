@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ログイン - QUSIS デモデイ</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+        
+        .container {
+            max-width: 28rem;
+            width: 100%;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: #2dd4bf;
+            text-decoration: none;
+            margin-bottom: 1.5rem;
+            font-size: 0.875rem;
+            transition: color 0.2s;
+        }
+        
+        .back-link:hover {
+            color: #7dd3fc;
+        }
+        
+        .back-icon {
+            width: 1rem;
+            height: 1rem;
+        }
+        
+        .title {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: white;
+            margin-bottom: 0.5rem;
+        }
+        
+        .subtitle {
+            color: #9ca3af;
+        }
+        
+        .form-container {
+            background: rgba(17, 24, 39, 0.5);
+            backdrop-filter: blur(8px);
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            border: 1px solid #374151;
+        }
+        
+        .error-message {
+            display: none;
+            align-items: center;
+            gap: 0.5rem;
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            color: #f87171;
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
+            font-size: 0.875rem;
+        }
+        
+        .error-message.show {
+            display: flex;
+        }
+        
+        .error-icon {
+            width: 1rem;
+            height: 1rem;
+        }
+        
+        .form {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .label {
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: #d1d5db;
+            margin-bottom: 0.5rem;
+        }
+        
+        .input-container {
+            position: relative;
+        }
+        
+        .input-icon {
+            position: absolute;
+            left: 0.75rem;
+            top: 0.75rem;
+            width: 1rem;
+            height: 1rem;
+            color: #9ca3af;
+        }
+        
+        .input {
+            width: 100%;
+            padding: 0.5rem 1rem 0.5rem 2.5rem;
+            background: #1f2937;
+            border: 1px solid #4b5563;
+            border-radius: 0.5rem;
+            color: white;
+            font-size: 1rem;
+        }
+        
+        .input::placeholder {
+            color: #9ca3af;
+        }
+        
+        .input:focus {
+            outline: none;
+            ring: 2px;
+            ring-color: #14b8a6;
+            border-color: #14b8a6;
+        }
+        
+        .submit-btn {
+            width: 100%;
+            background: #14b8a6;
+            color: white;
+            font-weight: 500;
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            font-size: 1rem;
+        }
+        
+        .submit-btn:hover:not(:disabled) {
+            background: #0d9488;
+        }
+        
+        .submit-btn:disabled {
+            background: #4b5563;
+            cursor: not-allowed;
+        }
+        
+        .demo-section {
+            margin-top: 1.5rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid #374151;
+        }
+        
+        .demo-title {
+            color: #9ca3af;
+            font-size: 0.875rem;
+            text-align: center;
+            margin-bottom: 0.75rem;
+        }
+        
+        .demo-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        
+        .demo-btn {
+            width: 100%;
+            color: white;
+            font-size: 0.875rem;
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        
+        .demo-btn.viewer {
+            background: #2563eb;
+        }
+        
+        .demo-btn.viewer:hover {
+            background: #1d4ed8;
+        }
+        
+        .demo-btn.presenter {
+            background: #16a34a;
+        }
+        
+        .demo-btn.presenter:hover {
+            background: #15803d;
+        }
+        
+        .demo-btn.admin {
+            background: #9333ea;
+        }
+        
+        .demo-btn.admin:hover {
+            background: #7c3aed;
+        }
+        
+        .register-link {
+            margin-top: 1.5rem;
+            text-align: center;
+        }
+        
+        .register-text {
+            color: #9ca3af;
+            font-size: 0.875rem;
+        }
+        
+        .register-text a {
+            color: #2dd4bf;
+            text-decoration: underline;
+            transition: color 0.2s;
+        }
+        
+        .register-text a:hover {
+            color: #7dd3fc;
+        }
+        
+        .loading {
+            opacity: 0.7;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <a href="index.html" class="back-link">
+                <svg class="back-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+                </svg>
+                <span>戻る</span>
+            </a>
+            
+            <h1 class="title">ログイン</h1>
+            <p class="subtitle">アカウントにログインしてください</p>
+        </div>
+
+        <!-- Login Form -->
+        <div class="form-container">
+            <div class="error-message" id="error-message">
+                <svg class="error-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.082 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+                </svg>
+                <span id="error-text"></span>
+            </div>
+
+            <form class="form" id="login-form">
+                <div class="form-group">
+                    <label class="label" for="email">メールアドレス</label>
+                    <div class="input-container">
+                        <svg class="input-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 7.89a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                        </svg>
+                        <input
+                            type="email"
+                            id="email"
+                            name="email"
+                            class="input"
+                            placeholder="your@example.com"
+                            required
+                        />
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="label" for="password">パスワード</label>
+                    <div class="input-container">
+                        <svg class="input-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                        </svg>
+                        <input
+                            type="password"
+                            id="password"
+                            name="password"
+                            class="input"
+                            placeholder="パスワードを入力"
+                            required
+                        />
+                    </div>
+                </div>
+
+                <button type="submit" class="submit-btn" id="submit-btn">
+                    ログイン
+                </button>
+            </form>
+
+            <!-- Demo Login Buttons -->
+            <div class="demo-section">
+                <p class="demo-title">デモアカウントでログイン:</p>
+                <div class="demo-buttons">
+                    <button class="demo-btn viewer" onclick="handleDemoLogin('viewer')">
+                        観覧者として (viewer1)
+                    </button>
+                    <button class="demo-btn presenter" onclick="handleDemoLogin('presenter')">
+                        発表者として (presenter1)
+                    </button>
+                    <button class="demo-btn admin" onclick="handleDemoLogin('admin')">
+                        管理者として (admin)
+                    </button>
+                </div>
+            </div>
+
+            <div class="register-link">
+                <p class="register-text">
+                    アカウントをお持ちでない方は
+                    <a href="register.html">こちらから登録</a>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // フォーム要素の取得
+        const form = document.getElementById('login-form');
+        const emailInput = document.getElementById('email');
+        const passwordInput = document.getElementById('password');
+        const submitBtn = document.getElementById('submit-btn');
+        const errorMessage = document.getElementById('error-message');
+        const errorText = document.getElementById('error-text');
+
+        // エラー表示関数
+        function showError(message) {
+            errorText.textContent = message;
+            errorMessage.classList.add('show');
+        }
+
+        // エラー非表示関数
+        function hideError() {
+            errorMessage.classList.remove('show');
+        }
+
+        // ローディング状態の設定
+        function setLoading(loading) {
+            if (loading) {
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'ログイン中...';
+                form.classList.add('loading');
+            } else {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'ログイン';
+                form.classList.remove('loading');
+            }
+        }
+
+        // ログイン処理
+        async function handleLogin(email, password) {
+            hideError();
+            setLoading(true);
+
+            try {
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ email, password })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    // 認証トークンを保存
+                    localStorage.setItem('authToken', data.token);
+                    localStorage.setItem('user', JSON.stringify(data.user));
+                    
+                    // ホームページにリダイレクト
+                    window.location.href = 'home.html';
+                } else {
+                    showError(data.message || 'ログインに失敗しました');
+                }
+            } catch (error) {
+                console.error('ログインエラー:', error);
+                showError('ログインに失敗しました');
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        // フォーム送信処理
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const email = emailInput.value.trim();
+            const password = passwordInput.value;
+
+            if (!email || !password) {
+                showError('メールアドレスとパスワードを入力してください');
+                return;
+            }
+
+            await handleLogin(email, password);
+        });
+
+        // デモログイン処理
+        function handleDemoLogin(userType) {
+            const demoCredentials = {
+                viewer: { email: 'viewer1@example.com', password: 'password' },
+                presenter: { email: 'presenter1@example.com', password: 'password' },
+                admin: { email: 'admin@example.com', password: 'password' }
+            };
+
+            const credentials = demoCredentials[userType];
+            if (credentials) {
+                emailInput.value = credentials.email;
+                passwordInput.value = credentials.password;
+                
+                // 自動的にログイン実行
+                handleLogin(credentials.email, credentials.password);
+            }
+        }
+
+        // 入力時にエラーメッセージを非表示
+        emailInput.addEventListener('input', hideError);
+        passwordInput.addEventListener('input', hideError);
+
+        // ページ読み込み時の認証チェック
+        window.addEventListener('load', () => {
+            const token = localStorage.getItem('authToken');
+            if (token) {
+                // 既にログイン済みの場合はホームにリダイレクト
+                window.location.href = 'home.html';
+            }
+        });
+    </script>
+</body>
+</html>

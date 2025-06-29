@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ホーム - QUSIS デモデイ</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #f9fafb;
+            color: #111827;
+            line-height: 1.5;
+        }
+        
+        .container {
+            max-width: 80rem;
+            margin: 0 auto;
+            padding: 2rem 1rem;
+        }
+        
+        @media (min-width: 640px) {
+            .container {
+                padding: 3rem 1.5rem;
+            }
+        }
+        
+        @media (min-width: 1024px) {
+            .container {
+                padding: 3rem 2rem;
+            }
+        }
+        
+        .section {
+            margin-bottom: 2rem;
+        }
+        
+        .title {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #111827;
+            margin-bottom: 1.5rem;
+        }
+        
+        @media (min-width: 640px) {
+            .title {
+                font-size: 1.875rem;
+            }
+        }
+        
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1.5rem;
+        }
+        
+        @media (min-width: 640px) {
+            .grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        
+        @media (min-width: 1024px) {
+            .grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+        
+        .pitch-card {
+            background: white;
+            border-radius: 0.5rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e5e7eb;
+            overflow: hidden;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .pitch-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+        
+        .cover-image {
+            height: 12rem;
+            background: linear-gradient(135deg, #14b8a6, #2563eb);
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .cover-placeholder {
+            text-align: center;
+            color: white;
+        }
+        
+        .cover-placeholder .team-name {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+        
+        .cover-placeholder .cover-text {
+            font-size: 0.875rem;
+            opacity: 0.9;
+        }
+        
+        .cover-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .status-badge {
+            position: absolute;
+            top: 1rem;
+            left: 1rem;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+        
+        .status-upcoming {
+            background: #dbeafe;
+            color: #2563eb;
+        }
+        
+        .status-live {
+            background: #fef2f2;
+            color: #dc2626;
+        }
+        
+        .status-ended {
+            background: #f9fafb;
+            color: #6b7280;
+        }
+        
+        .status-icon {
+            width: 1rem;
+            height: 1rem;
+        }
+        
+        .live-indicator {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+        
+        .live-dot {
+            width: 0.5rem;
+            height: 0.5rem;
+            background: #dc2626;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .live-text {
+            color: white;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+        
+        .card-content {
+            padding: 1.5rem;
+        }
+        
+        .card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 0.75rem;
+        }
+        
+        .team-badge {
+            background: #f3e8ff;
+            color: #7c3aed;
+            font-size: 0.75rem;
+            font-weight: 500;
+            padding: 0.25rem 0.5rem;
+            border-radius: 9999px;
+        }
+        
+        .schedule {
+            color: #6b7280;
+            font-size: 0.875rem;
+        }
+        
+        .pitch-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: #111827;
+            margin-bottom: 0.5rem;
+        }
+        
+        .pitch-description {
+            color: #6b7280;
+            font-size: 0.875rem;
+            margin-bottom: 1rem;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        
+        .stats {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+            font-size: 0.875rem;
+        }
+        
+        .stats-left {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+        
+        .stat-participants {
+            color: #6b7280;
+        }
+        
+        .stat-tips {
+            color: #ea580c;
+        }
+        
+        .stat-icon {
+            width: 1rem;
+            height: 1rem;
+        }
+        
+        .pitch-id {
+            color: #9ca3af;
+            font-size: 0.75rem;
+        }
+        
+        .action-btn {
+            width: 100%;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            font-weight: 500;
+            text-align: center;
+            text-decoration: none;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            display: block;
+        }
+        
+        .btn-live {
+            background: #dc2626;
+            color: white;
+        }
+        
+        .btn-live:hover {
+            background: #b91c1c;
+        }
+        
+        .btn-upcoming {
+            background: #2563eb;
+            color: white;
+        }
+        
+        .btn-upcoming:hover {
+            background: #1d4ed8;
+        }
+        
+        .btn-disabled {
+            background: #f3f4f6;
+            color: #6b7280;
+            cursor: not-allowed;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 3rem 0;
+        }
+        
+        .empty-icon {
+            width: 3rem;
+            height: 3rem;
+            color: #9ca3af;
+            margin: 0 auto 1rem;
+        }
+        
+        .empty-text {
+            color: #6b7280;
+            font-size: 1.125rem;
+        }
+        
+        .info-section {
+            background: #f0fdfa;
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            border: 1px solid #5eead4;
+        }
+        
+        .info-header {
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+            flex-direction: column;
+        }
+        
+        @media (min-width: 640px) {
+            .info-header {
+                flex-direction: row;
+                align-items: center;
+                gap: 1rem;
+            }
+        }
+        
+        .info-icon {
+            width: 2rem;
+            height: 2rem;
+            background: #14b8a6;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            font-size: 1rem;
+        }
+        
+        .info-content h3 {
+            font-weight: 600;
+            color: #0f766e;
+            margin-bottom: 0.5rem;
+        }
+        
+        .info-list {
+            color: #0f766e;
+            font-size: 0.875rem;
+        }
+        
+        .info-list li {
+            margin-bottom: 0.25rem;
+        }
+        
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 3rem;
+        }
+        
+        .spinner {
+            width: 2rem;
+            height: 2rem;
+            border: 2px solid #e5e7eb;
+            border-top: 2px solid #14b8a6;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Pitch Grid -->
+        <div class="section">
+            <h2 class="title">今日のピッチ一覧</h2>
+            
+            <!-- Loading State -->
+            <div id="loading" class="loading">
+                <div class="spinner"></div>
+            </div>
+            
+            <!-- Pitch Grid Container -->
+            <div id="pitch-grid" class="grid" style="display: none;">
+                <!-- Pitch cards will be inserted here -->
+            </div>
+            
+            <!-- Empty State -->
+            <div id="empty-state" class="empty-state" style="display: none;">
+                <svg class="empty-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                </svg>
+                <p class="empty-text">今日のピッチはまだ登録されていません</p>
+            </div>
+        </div>
+
+        <!-- Footer Info -->
+        <div class="info-section">
+            <div class="info-header">
+                <div class="info-icon">💡</div>
+                <div class="info-content">
+                    <h3>応援の仕方</h3>
+                    <ul class="info-list">
+                        <li>• チャットに参加して20 QUcoinを獲得</li>
+                        <li>• 投げ銭で直接応援（10〜100 QUcoin）</li>
+                        <li>• QUSIS協力活動でQUcoinを獲得</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ピッチデータを格納する変数
+        let pitches = [];
+
+        // ステータス情報を取得する関数
+        function getStatusInfo(status) {
+            switch (status) {
+                case 'live':
+                    return {
+                        label: 'デモ中',
+                        className: 'status-live',
+                        icon: `<svg class="status-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1m4 0h1m-6 4h8m-2 3l2 3h-6l2-3z"/>
+                               </svg>`
+                    };
+                case 'ended':
+                    return {
+                        label: '終了',
+                        className: 'status-ended',
+                        icon: `<svg class="status-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                               </svg>`
+                    };
+                default:
+                    return {
+                        label: '開始前',
+                        className: 'status-upcoming',
+                        icon: `<svg class="status-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                               </svg>`
+                    };
+            }
+        }
+
+        // アクションボタンを生成する関数
+        function getActionButton(pitch) {
+            if (pitch.status === 'ended') {
+                return `<button class="action-btn btn-disabled">終了しました</button>`;
+            }
+            
+            const buttonClass = pitch.status === 'live' ? 'btn-live' : 'btn-upcoming';
+            const buttonText = pitch.status === 'live' ? 'デモを見る' : '応援する';
+            
+            return `<a href="pitch-detail.html?id=${pitch._id}" class="action-btn ${buttonClass}">${buttonText}</a>`;
+        }
+
+        // ピッチカードを生成する関数
+        function createPitchCard(pitch) {
+            const statusInfo = getStatusInfo(pitch.status);
+            const liveIndicator = pitch.status === 'live' ? 
+                `<div class="live-indicator">
+                   <div class="live-dot"></div>
+                   <span class="live-text">LIVE</span>
+                 </div>` : '';
+
+            return `
+                <div class="pitch-card">
+                    <!-- Cover Image -->
+                    <div class="cover-image">
+                        ${pitch.coverImage ? 
+                            `<img src="${pitch.coverImage}" alt="${pitch.title}" />` :
+                            `<div class="cover-placeholder">
+                               <div class="team-name">${pitch.team}</div>
+                               <div class="cover-text">Cover Image</div>
+                             </div>`
+                        }
+                        
+                        <!-- Status Badge -->
+                        <div class="status-badge ${statusInfo.className}">
+                            ${statusInfo.icon}
+                            <span>${statusInfo.label}</span>
+                        </div>
+                        
+                        <!-- Live Indicator -->
+                        ${liveIndicator}
+                    </div>
+
+                    <!-- Content -->
+                    <div class="card-content">
+                        <div class="card-header">
+                            <span class="team-badge">${pitch.team}</span>
+                            <span class="schedule">${pitch.schedule}</span>
+                        </div>
+
+                        <h3 class="pitch-title">${pitch.title}</h3>
+                        <p class="pitch-description">${pitch.description}</p>
+
+                        <!-- Stats -->
+                        <div class="stats">
+                            <div class="stats-left">
+                                <div class="stat-item stat-participants">
+                                    <svg class="stat-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"/>
+                                    </svg>
+                                    <span>${pitch.participants}人</span>
+                                </div>
+                                <div class="stat-item stat-tips">
+                                    <svg class="stat-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+                                    </svg>
+                                    <span>${pitch.totalTips} QU</span>
+                                </div>
+                            </div>
+                            <span class="pitch-id">#${pitch._id}</span>
+                        </div>
+
+                        <!-- Action Button -->
+                        ${getActionButton(pitch)}
+                    </div>
+                </div>
+            `;
+        }
+
+        // ピッチデータを取得して表示する関数
+        async function loadPitches() {
+            try {
+                const token = localStorage.getItem('authToken');
+                const response = await fetch('/api/pitches', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    pitches = await response.json();
+                    displayPitches();
+                } else {
+                    console.error('ピッチデータの取得に失敗しました');
+                    showEmptyState();
+                }
+            } catch (error) {
+                console.error('ピッチデータの取得エラー:', error);
+                showEmptyState();
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // ピッチを表示する関数
+        function displayPitches() {
+            const grid = document.getElementById('pitch-grid');
+            
+            if (pitches.length === 0) {
+                showEmptyState();
+                return;
+            }
+
+            grid.innerHTML = pitches.map(pitch => createPitchCard(pitch)).join('');
+            grid.style.display = 'grid';
+        }
+
+        // 空の状態を表示する関数
+        function showEmptyState() {
+            document.getElementById('empty-state').style.display = 'block';
+        }
+
+        // ローディングを非表示にする関数
+        function hideLoading() {
+            document.getElementById('loading').style.display = 'none';
+        }
+
+        // 認証チェック関数
+        function checkAuth() {
+            const token = localStorage.getItem('authToken');
+            if (!token) {
+                window.location.href = 'login.html';
+                return false;
+            }
+            return true;
+        }
+
+        // ページ読み込み時の処理
+        window.addEventListener('load', () => {
+            if (checkAuth()) {
+                loadPitches();
+            }
+        });
+
+        // リアルタイム更新（Socket.ioとの連携）
+        // 注意: この部分は実際のSocket.io設定に合わせて調整が必要
+        /*
+        if (typeof io !== 'undefined') {
+            const socket = io();
+            
+            socket.on('pitchUpdate', (updatedPitch) => {
+                const index = pitches.findIndex(p => p._id === updatedPitch._id);
+                if (index !== -1) {
+                    pitches[index] = updatedPitch;
+                    displayPitches();
+                }
+            });
+
+            socket.on('newPitch', (newPitch) => {
+                pitches.push(newPitch);
+                displayPitches();
+            });
+        }
+        */
+    </script>
+</body>
+</html>

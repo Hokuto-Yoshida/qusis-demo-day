@@ -1,0 +1,1077 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ピッチ管理 - QUSIS デモデイ</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #f9fafb;
+            color: #111827;
+            line-height: 1.5;
+        }
+        
+        .container {
+            max-width: 80rem;
+            margin: 0 auto;
+            padding: 2rem 1rem;
+        }
+        
+        .header {
+            margin-bottom: 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+        
+        .header-info h1 {
+            font-size: 1.875rem;
+            font-weight: bold;
+            color: #111827;
+            margin-bottom: 0.5rem;
+        }
+        
+        .header-info p {
+            color: #6b7280;
+        }
+        
+        .create-btn {
+            background: #14b8a6;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 1rem;
+        }
+        
+        .create-btn:hover {
+            background: #0d9488;
+        }
+        
+        .create-icon {
+            width: 1.25rem;
+            height: 1.25rem;
+        }
+        
+        .pitches-container {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+        
+        .pitch-card {
+            background: white;
+            border-radius: 0.5rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e5e7eb;
+            overflow: hidden;
+        }
+        
+        .pitch-content {
+            padding: 1.5rem;
+        }
+        
+        .pitch-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+        }
+        
+        .pitch-badges {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        
+        .status-badge {
+            padding: 0.25rem 0.5rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+        
+        .status-upcoming {
+            background: #dbeafe;
+            color: #2563eb;
+        }
+        
+        .status-live {
+            background: #fef2f2;
+            color: #dc2626;
+        }
+        
+        .status-ended {
+            background: #f3f4f6;
+            color: #6b7280;
+        }
+        
+        .team-badge {
+            background: #f3f4f6;
+            color: #1f2937;
+            padding: 0.25rem 0.5rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+        
+        .pitch-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .action-btn {
+            padding: 0.5rem;
+            background: none;
+            border: none;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: #9ca3af;
+        }
+        
+        .action-btn:hover {
+            background: #f3f4f6;
+        }
+        
+        .action-btn.edit:hover {
+            color: #14b8a6;
+            background: #f0fdfa;
+        }
+        
+        .action-btn.delete:hover {
+            color: #dc2626;
+            background: #fef2f2;
+        }
+        
+        .action-icon {
+            width: 1rem;
+            height: 1rem;
+        }
+        
+        .pitch-title {
+            font-size: 1.25rem;
+            font-weight: bold;
+            color: #111827;
+            margin-bottom: 0.5rem;
+        }
+        
+        .pitch-description {
+            color: #6b7280;
+            margin-bottom: 1rem;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1.5rem;
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+        
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .stat-header {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+            margin-bottom: 0.25rem;
+        }
+        
+        .stat-header.participants {
+            color: #6b7280;
+        }
+        
+        .stat-header.tips {
+            color: #16a34a;
+        }
+        
+        .stat-icon {
+            width: 1rem;
+            height: 1rem;
+        }
+        
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #111827;
+        }
+        
+        .stat-value.tips {
+            color: #16a34a;
+        }
+        
+        .stat-unit {
+            color: #6b7280;
+            font-size: 0.875rem;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 0.75rem;
+        }
+        
+        .btn {
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            font-size: 0.875rem;
+            border: none;
+            text-decoration: none;
+        }
+        
+        .btn-primary {
+            flex: 1;
+            background: #14b8a6;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #0d9488;
+        }
+        
+        .btn-danger {
+            background: none;
+            color: #dc2626;
+            border: 1px solid #fca5a5;
+        }
+        
+        .btn-danger:hover {
+            background: #fef2f2;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 3rem 0;
+        }
+        
+        .empty-icon {
+            width: 4rem;
+            height: 4rem;
+            background: #f3f4f6;
+            border-radius: 50%;
+            margin: 0 auto 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .empty-icon svg {
+            width: 2rem;
+            height: 2rem;
+            color: #9ca3af;
+        }
+        
+        .empty-title {
+            font-size: 1.125rem;
+            font-weight: 500;
+            color: #111827;
+            margin-bottom: 0.5rem;
+        }
+        
+        .empty-text {
+            color: #6b7280;
+            margin-bottom: 1.5rem;
+        }
+        
+        /* Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 50;
+            padding: 1rem;
+        }
+        
+        .modal {
+            background: white;
+            border-radius: 0.5rem;
+            max-width: 42rem;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        
+        .modal-header {
+            padding: 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        
+        .modal-title {
+            font-size: 1.25rem;
+            font-weight: bold;
+            color: #111827;
+        }
+        
+        .close-btn {
+            background: none;
+            border: none;
+            color: #9ca3af;
+            cursor: pointer;
+            padding: 0.25rem;
+            border-radius: 0.25rem;
+            transition: color 0.2s;
+        }
+        
+        .close-btn:hover {
+            color: #6b7280;
+        }
+        
+        .close-icon {
+            width: 1.5rem;
+            height: 1.5rem;
+        }
+        
+        .modal-content {
+            padding: 1.5rem;
+        }
+        
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        .form-label {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: #374151;
+            margin-bottom: 0.5rem;
+        }
+        
+        .form-label.required::before {
+            content: "⭐";
+            color: #eab308;
+        }
+        
+        .label-icon {
+            width: 1rem;
+            height: 1rem;
+        }
+        
+        .form-input {
+            width: 100%;
+            padding: 0.5rem 0.75rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+        }
+        
+        .form-input:focus {
+            outline: none;
+            ring: 2px;
+            ring-color: #14b8a6;
+            border-color: #14b8a6;
+        }
+        
+        .form-textarea {
+            resize: vertical;
+            min-height: 6rem;
+        }
+        
+        .upload-area {
+            border: 2px dashed #d1d5db;
+            border-radius: 0.5rem;
+            padding: 2rem;
+            text-align: center;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+        
+        .upload-area.drag-active {
+            border-color: #14b8a6;
+            background: #f0fdfa;
+        }
+        
+        .upload-area:hover {
+            border-color: #9ca3af;
+        }
+        
+        .upload-icon {
+            width: 2rem;
+            height: 2rem;
+            color: #9ca3af;
+            margin: 0 auto 0.5rem;
+        }
+        
+        .upload-text {
+            color: #6b7280;
+            margin-bottom: 0.25rem;
+        }
+        
+        .upload-hint {
+            color: #9ca3af;
+            font-size: 0.875rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .upload-button {
+            background: #f3f4f6;
+            color: #374151;
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        
+        .upload-button:hover {
+            background: #e5e7eb;
+        }
+        
+        .image-preview {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .preview-image {
+            max-height: 8rem;
+            border-radius: 0.5rem;
+        }
+        
+        .remove-image {
+            color: #dc2626;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 0.875rem;
+            transition: color 0.2s;
+        }
+        
+        .remove-image:hover {
+            color: #b91c1c;
+        }
+        
+        .modal-actions {
+            display: flex;
+            gap: 0.75rem;
+            padding-top: 1.5rem;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem;
+        }
+        
+        .spinner {
+            width: 2rem;
+            height: 2rem;
+            border: 2px solid #e5e7eb;
+            border-top: 2px solid #14b8a6;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Loading State -->
+        <div id="loading" class="loading">
+            <div class="spinner"></div>
+        </div>
+
+        <!-- Main Content -->
+        <div id="main-content" class="hidden">
+            <!-- Header -->
+            <div class="header">
+                <div class="header-info">
+                    <h1>QUSISデモデイ</h1>
+                    <p>ピッチ応援アプリ</p>
+                </div>
+                <button class="create-btn" onclick="openCreateModal()">
+                    <svg class="create-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                    </svg>
+                    <span>新規ピッチ作成</span>
+                </button>
+            </div>
+
+            <!-- Pitches Container -->
+            <div class="pitches-container">
+                <div id="pitches-list">
+                    <!-- Pitch cards will be inserted here -->
+                </div>
+
+                <!-- Empty State -->
+                <div id="empty-state" class="empty-state hidden">
+                    <div class="empty-icon">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                        </svg>
+                    </div>
+                    <h3 class="empty-title">ピッチがありません</h3>
+                    <p class="empty-text">新しいピッチを作成して応援を集めましょう</p>
+                    <button class="create-btn" onclick="openCreateModal()">
+                        最初のピッチを作成
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal -->
+        <div id="modal-overlay" class="modal-overlay hidden">
+            <div class="modal">
+                <div class="modal-header">
+                    <h2 class="modal-title" id="modal-title">新規ピッチ作成</h2>
+                    <button class="close-btn" onclick="closeModal()">
+                        <svg class="close-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </button>
+                </div>
+                <div class="modal-content">
+                    <form id="pitch-form">
+                        <!-- Title -->
+                        <div class="form-group">
+                            <label class="form-label required">
+                                <span>ピッチタイトル</span>
+                            </label>
+                            <input
+                                type="text"
+                                id="title-input"
+                                class="form-input"
+                                placeholder="ピッチのタイトルを入力"
+                                required
+                            />
+                        </div>
+
+                        <!-- Description -->
+                        <div class="form-group">
+                            <label class="form-label">
+                                <svg class="label-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                </svg>
+                                <span>詳細説明</span>
+                            </label>
+                            <textarea
+                                id="description-input"
+                                class="form-input form-textarea"
+                                placeholder="ピッチの詳細説明を入力"
+                                required
+                            ></textarea>
+                        </div>
+
+                        <!-- Cover Image -->
+                        <div class="form-group">
+                            <label class="form-label">
+                                カバー画像（任意）
+                            </label>
+                            <div
+                                id="upload-area"
+                                class="upload-area"
+                                ondrop="handleDrop(event)"
+                                ondragover="handleDragOver(event)"
+                                ondragenter="handleDragEnter(event)"
+                                ondragleave="handleDragLeave(event)"
+                                onclick="triggerFileInput()"
+                            >
+                                <div id="upload-content">
+                                    <svg class="upload-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                                    </svg>
+                                    <p class="upload-text">クリックまたはドラッグ&ドロップで画像を選択</p>
+                                    <p class="upload-hint">JPG, PNG, GIF, WebP, HEIC (最大5MB)</p>
+                                    <button type="button" class="upload-button">ファイルを選択</button>
+                                </div>
+                                <div id="image-preview" class="image-preview hidden">
+                                    <img id="preview-image" class="preview-image" alt="Preview" />
+                                    <button type="button" class="remove-image" onclick="removeImage()">
+                                        画像を削除
+                                    </button>
+                                </div>
+                            </div>
+                            <input
+                                type="file"
+                                id="file-input"
+                                accept="image/*"
+                                class="hidden"
+                                onchange="handleFileSelect(event)"
+                            />
+                        </div>
+
+                        <!-- Actions -->
+                        <div class="modal-actions">
+                            <button type="button" class="btn btn-secondary" onclick="closeModal()">
+                                キャンセル
+                            </button>
+                            <button type="submit" class="btn btn-primary">
+                                <svg class="label-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                </svg>
+                                <span id="submit-text">作成する</span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // グローバル変数
+        let currentUser = null;
+        let userPitches = [];
+        let isEditMode = false;
+        let editingPitch = null;
+
+        // 認証チェック
+        function checkAuth() {
+            const token = localStorage.getItem('authToken');
+            const userStr = localStorage.getItem('user');
+            
+            if (!token || !userStr) {
+                window.location.href = 'login.html';
+                return false;
+            }
+            
+            try {
+                currentUser = JSON.parse(userStr);
+                // 発表者以外はアクセス不可
+                if (currentUser.role !== 'presenter') {
+                    alert('このページは発表者のみアクセス可能です');
+                    window.location.href = 'home.html';
+                    return false;
+                }
+                return true;
+            } catch (error) {
+                console.error('ユーザー情報の解析に失敗:', error);
+                window.location.href = 'login.html';
+                return false;
+            }
+        }
+
+        // ユーザーのピッチを取得
+        async function loadUserPitches() {
+            try {
+                const token = localStorage.getItem('authToken');
+                const response = await fetch(`/api/pitches/user/${currentUser.id}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    userPitches = await response.json();
+                    displayPitches();
+                } else {
+                    console.error('ピッチデータの取得に失敗');
+                    showEmptyState();
+                }
+            } catch (error) {
+                console.error('ピッチデータの取得エラー:', error);
+                showEmptyState();
+            }
+        }
+
+        // ピッチを表示
+        function displayPitches() {
+            const container = document.getElementById('pitches-list');
+            const emptyState = document.getElementById('empty-state');
+
+            if (userPitches.length === 0) {
+                container.innerHTML = '';
+                emptyState.classList.remove('hidden');
+                return;
+            }
+
+            emptyState.classList.add('hidden');
+            container.innerHTML = userPitches.map(pitch => createPitchCard(pitch)).join('');
+        }
+
+        // ピッチカードを作成
+        function createPitchCard(pitch) {
+            const statusInfo = getStatusInfo(pitch.status);
+            
+            return `
+                <div class="pitch-card">
+                    <div class="pitch-content">
+                        <div class="pitch-header">
+                            <div class="pitch-badges">
+                                <span class="status-badge ${statusInfo.className}">
+                                    ${statusInfo.label}
+                                </span>
+                                <span class="team-badge">${currentUser.team}</span>
+                            </div>
+                            <div class="pitch-actions">
+                                <button class="action-btn edit" onclick="editPitch('${pitch._id}')">
+                                    <svg class="action-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                    </svg>
+                                </button>
+                                <button class="action-btn delete" onclick="deletePitch('${pitch._id}')">
+                                    <svg class="action-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+
+                        <h2 class="pitch-title">${pitch.title}</h2>
+                        <p class="pitch-description">${pitch.description}</p>
+
+                        <div class="stats-grid">
+                            <div class="stat-item">
+                                <div class="stat-header participants">
+                                    <svg class="stat-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"/>
+                                    </svg>
+                                    <span>参加者</span>
+                                </div>
+                                <div class="stat-value">${pitch.participants || 0}</div>
+                                <div class="stat-unit">人</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-header tips">
+                                    <svg class="stat-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+                                    </svg>
+                                    <span>ギフト総額</span>
+                                </div>
+                                <div class="stat-value tips">${pitch.totalTips || 0}</div>
+                                <div class="stat-unit">QUcoin</div>
+                            </div>
+                        </div>
+
+                        <div class="button-group">
+                            <button class="btn btn-primary" onclick="editPitch('${pitch._id}')">
+                                <svg class="label-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                </svg>
+                                <span>編集</span>
+                            </button>
+                            <button class="btn btn-danger" onclick="deletePitch('${pitch._id}')">
+                                <svg class="label-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                </svg>
+                                <span>削除</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // ステータス情報を取得
+        function getStatusInfo(status) {
+            switch (status) {
+                case 'live':
+                    return { label: 'デモ中', className: 'status-live' };
+                case 'ended':
+                    return { label: '終了', className: 'status-ended' };
+                default:
+                    return { label: '未開始', className: 'status-upcoming' };
+            }
+        }
+
+        // 空状態を表示
+        function showEmptyState() {
+            document.getElementById('pitches-list').innerHTML = '';
+            document.getElementById('empty-state').classList.remove('hidden');
+        }
+
+        // 作成モーダルを開く
+        function openCreateModal() {
+            isEditMode = false;
+            editingPitch = null;
+            document.getElementById('modal-title').textContent = '新規ピッチ作成';
+            document.getElementById('submit-text').textContent = '作成する';
+            clearForm();
+            document.getElementById('modal-overlay').classList.remove('hidden');
+        }
+
+        // 編集モーダルを開く
+        function editPitch(pitchId) {
+            const pitch = userPitches.find(p => p._id === pitchId);
+            if (!pitch) return;
+
+            isEditMode = true;
+            editingPitch = pitch;
+            document.getElementById('modal-title').textContent = 'ピッチ編集';
+            document.getElementById('submit-text').textContent = '更新する';
+            
+            // フォームにデータを設定
+            document.getElementById('title-input').value = pitch.title || '';
+            document.getElementById('description-input').value = pitch.description || '';
+            
+            if (pitch.coverImage) {
+                showImagePreview(pitch.coverImage);
+            } else {
+                hideImagePreview();
+            }
+            
+            document.getElementById('modal-overlay').classList.remove('hidden');
+        }
+
+        // モーダルを閉じる
+        function closeModal() {
+            document.getElementById('modal-overlay').classList.add('hidden');
+            clearForm();
+            isEditMode = false;
+            editingPitch = null;
+        }
+
+        // フォームをクリア
+        function clearForm() {
+            document.getElementById('title-input').value = '';
+            document.getElementById('description-input').value = '';
+            hideImagePreview();
+        }
+
+        // ピッチ削除
+        async function deletePitch(pitchId) {
+            const pitch = userPitches.find(p => p._id === pitchId);
+            if (!pitch) return;
+
+            if (!confirm(`「${pitch.title}」を削除しますか？`)) return;
+
+            try {
+                const token = localStorage.getItem('authToken');
+                const response = await fetch(`/api/pitches/${pitchId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    userPitches = userPitches.filter(p => p._id !== pitchId);
+                    displayPitches();
+                    alert('ピッチを削除しました');
+                } else {
+                    alert('削除に失敗しました');
+                }
+            } catch (error) {
+                console.error('削除エラー:', error);
+                alert('削除に失敗しました');
+            }
+        }
+
+        // ファイル選択をトリガー
+        function triggerFileInput() {
+            document.getElementById('file-input').click();
+        }
+
+        // ドラッグ&ドロップハンドラー
+        function handleDragEnter(event) {
+            event.preventDefault();
+            event.stopPropagation();
+            document.getElementById('upload-area').classList.add('drag-active');
+        }
+
+        function handleDragLeave(event) {
+            event.preventDefault();
+            event.stopPropagation();
+            document.getElementById('upload-area').classList.remove('drag-active');
+        }
+
+        function handleDragOver(event) {
+            event.preventDefault();
+            event.stopPropagation();
+        }
+
+        function handleDrop(event) {
+            event.preventDefault();
+            event.stopPropagation();
+            document.getElementById('upload-area').classList.remove('drag-active');
+            
+            const files = event.dataTransfer.files;
+            if (files.length > 0) {
+                handleFile(files[0]);
+            }
+        }
+
+        // ファイル選択ハンドラー
+        function handleFileSelect(event) {
+            const files = event.target.files;
+            if (files.length > 0) {
+                handleFile(files[0]);
+            }
+        }
+
+        // ファイル処理
+        function handleFile(file) {
+            if (!file.type.startsWith('image/')) {
+                alert('画像ファイルを選択してください');
+                return;
+            }
+
+            if (file.size > 5 * 1024 * 1024) { // 5MB
+                alert('ファイルサイズが大きすぎます（最大5MB）');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                showImagePreview(event.target.result);
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // 画像プレビューを表示
+        function showImagePreview(imageSrc) {
+            document.getElementById('upload-content').classList.add('hidden');
+            document.getElementById('image-preview').classList.remove('hidden');
+            document.getElementById('preview-image').src = imageSrc;
+        }
+
+        // 画像プレビューを非表示
+        function hideImagePreview() {
+            document.getElementById('upload-content').classList.remove('hidden');
+            document.getElementById('image-preview').classList.add('hidden');
+            document.getElementById('preview-image').src = '';
+            document.getElementById('file-input').value = '';
+        }
+
+        // 画像を削除
+        function removeImage() {
+            hideImagePreview();
+        }
+
+        // フォーム送信
+        document.getElementById('pitch-form').addEventListener('submit', async (event) => {
+            event.preventDefault();
+            
+            const title = document.getElementById('title-input').value.trim();
+            const description = document.getElementById('description-input').value.trim();
+            const coverImage = document.getElementById('preview-image').src || '';
+
+            if (!title || !description) {
+                alert('タイトルと説明を入力してください');
+                return;
+            }
+
+            const pitchData = {
+                title,
+                description,
+                coverImage,
+                team: currentUser.team,
+                presenterId: currentUser.id,
+                presenterName: currentUser.name
+            };
+
+            try {
+                const token = localStorage.getItem('authToken');
+                let response;
+
+                if (isEditMode && editingPitch) {
+                    // 更新
+                    response = await fetch(`/api/pitches/${editingPitch._id}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(pitchData)
+                    });
+                } else {
+                    // 作成
+                    response = await fetch('/api/pitches', {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(pitchData)
+                    });
+                }
+
+                if (response.ok) {
+                    const result = await response.json();
+                    
+                    if (isEditMode) {
+                        // 既存のピッチを更新
+                        const index = userPitches.findIndex(p => p._id === editingPitch._id);
+                        if (index !== -1) {
+                            userPitches[index] = result;
+                        }
+                        alert('ピッチを更新しました');
+                    } else {
+                        // 新しいピッチを追加
+                        userPitches.push(result);
+                        alert('ピッチを作成しました');
+                    }
+                    
+                    displayPitches();
+                    closeModal();
+                } else {
+                    const error = await response.json();
+                    alert(error.message || '保存に失敗しました');
+                }
+            } catch (error) {
+                console.error('保存エラー:', error);
+                alert('保存に失敗しました');
+            }
+        });
+
+        // モーダル外クリックで閉じる
+        document.getElementById('modal-overlay').addEventListener('click', (event) => {
+            if (event.target === event.currentTarget) {
+                closeModal();
+            }
+        });
+
+        // ESCキーでモーダルを閉じる
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape' && !document.getElementById('modal-overlay').classList.contains('hidden')) {
+                closeModal();
+            }
+        });
+
+        // ページ読み込み時の初期化
+        window.addEventListener('load', async () => {
+            if (!checkAuth()) return;
+            
+            await loadUserPitches();
+            
+            document.getElementById('loading').classList.add('hidden');
+            document.getElementById('main-content').classList.remove('hidden');
+        });
+    </script>
+</body>
+</html>

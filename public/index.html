@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QUSISデモデイ - ピッチ応援プラットフォーム</title>
+    <style>
+        /* Reset and base styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        
+        /* Custom CSS recreating Tailwind classes */
+        .min-h-screen { min-height: 100vh; }
+        .relative { position: relative; }
+        .absolute { position: absolute; }
+        .fixed { position: fixed; }
+        .inset-0 { top: 0; right: 0; bottom: 0; left: 0; }
+        .z-10 { z-index: 10; }
+        
+        /* Background gradient */
+        .bg-gradient-dark {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+        }
+        
+        /* Colors */
+        .text-white { color: #ffffff; }
+        .text-teal-400 { color: #2dd4bf; }
+        .text-gray-300 { color: #d1d5db; }
+        .text-gray-400 { color: #9ca3af; }
+        .text-red-400 { color: #f87171; }
+        .bg-teal-500 { background-color: #14b8a6; }
+        .bg-teal-600 { background-color: #0d9488; }
+        .bg-gray-900-50 { background-color: rgba(17, 24, 39, 0.5); }
+        .bg-gray-900-30 { background-color: rgba(17, 24, 39, 0.3); }
+        .bg-gray-800-50 { background-color: rgba(31, 41, 55, 0.5); }
+        .border-gray-700 { border-color: #374151; }
+        .border-gray-600 { border-color: #4b5563; }
+        
+        /* Layout */
+        .flex { display: flex; }
+        .inline-flex { display: inline-flex; }
+        .items-center { align-items: center; }
+        .justify-between { justify-content: space-between; }
+        .space-x-2 > * + * { margin-left: 0.5rem; }
+        .space-x-4 > * + * { margin-left: 1rem; }
+        .space-y-4 > * + * { margin-top: 1rem; }
+        .text-center { text-align: center; }
+        .text-left { text-align: left; }
+        .text-right { text-align: right; }
+        
+        /* Sizing */
+        .w-5 { width: 1.25rem; }
+        .h-5 { height: 1.25rem; }
+        .w-6 { width: 1.5rem; }
+        .h-6 { height: 1.5rem; }
+        .w-80 { width: 20rem; }
+        .h-80 { height: 20rem; }
+        .max-w-4xl { max-width: 56rem; }
+        .mx-auto { margin-left: auto; margin-right: auto; }
+        
+        /* Padding and margin */
+        .px-6 { padding-left: 1.5rem; padding-right: 1.5rem; }
+        .py-4 { padding-top: 1rem; padding-bottom: 1rem; }
+        .py-8 { padding-top: 2rem; padding-bottom: 2rem; }
+        .p-4 { padding: 1rem; }
+        .p-6 { padding: 1.5rem; }
+        .p-8 { padding: 2rem; }
+        .px-8 { padding-left: 2rem; padding-right: 2rem; }
+        .py-3 { padding-top: 0.75rem; padding-bottom: 0.75rem; }
+        .px-3 { padding-left: 0.75rem; padding-right: 0.75rem; }
+        .py-1 { padding-top: 0.25rem; padding-bottom: 0.25rem; }
+        .pt-24 { padding-top: 6rem; }
+        .mb-1 { margin-bottom: 0.25rem; }
+        .mb-4 { margin-bottom: 1rem; }
+        .mb-6 { margin-bottom: 1.5rem; }
+        .mb-16 { margin-bottom: 4rem; }
+        .mt-1 { margin-top: 0.25rem; }
+        .mt-6 { margin-top: 1.5rem; }
+        .-top-40 { top: -10rem; }
+        .-right-40 { right: -10rem; }
+        .-bottom-40 { bottom: -10rem; }
+        .-left-40 { left: -10rem; }
+        
+        /* Typography */
+        .text-4xl { font-size: 2.25rem; line-height: 2.5rem; }
+        .text-5xl { font-size: 3rem; line-height: 1; }
+        .text-xl { font-size: 1.25rem; line-height: 1.75rem; }
+        .text-lg { font-size: 1.125rem; line-height: 1.75rem; }
+        .text-2xl { font-size: 1.5rem; line-height: 2rem; }
+        .text-sm { font-size: 0.875rem; line-height: 1.25rem; }
+        .text-xs { font-size: 0.75rem; line-height: 1rem; }
+        .font-bold { font-weight: 700; }
+        .font-medium { font-weight: 500; }
+        .font-semibold { font-weight: 600; }
+        
+        /* Border and radius */
+        .border { border-width: 1px; }
+        .rounded-lg { border-radius: 0.5rem; }
+        .rounded-full { border-radius: 9999px; }
+        
+        /* Effects */
+        .backdrop-blur-sm { backdrop-filter: blur(4px); }
+        .blur-3xl { filter: blur(64px); }
+        .overflow-hidden { overflow: hidden; }
+        .underline { text-decoration: underline; }
+        
+        /* Interactive */
+        .hover-bg-teal-600:hover { background-color: #0d9488; }
+        .hover-text-teal-300:hover { color: #5eead4; }
+        .transition-colors { transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out; }
+        
+        /* Custom background effects */
+        .bg-effect-1 {
+            background-color: rgba(20, 184, 166, 0.1);
+            border-radius: 50%;
+            filter: blur(64px);
+        }
+        
+        .bg-effect-2 {
+            background-color: rgba(59, 130, 246, 0.1);
+            border-radius: 50%;
+            filter: blur(64px);
+        }
+        
+        /* Media queries */
+        @media (min-width: 768px) {
+            .md-text-5xl { font-size: 3rem; line-height: 1; }
+        }
+    </style>
+</head>
+<body>
+    <div class="relative min-h-screen bg-gradient-dark text-white">
+
+        <!-- Header with logo and nav -->
+        <header class="fixed top-0 left-0 right-0 z-10 bg-transparent px-6 py-4 flex items-center justify-between">
+            <!-- Empty header as in original -->
+        </header>
+
+        <!-- Main Content -->
+        <main class="pt-24 px-6 relative z-10">
+            <div class="max-w-4xl mx-auto text-center">
+
+                <!-- Hero -->
+                <section class="mb-16">
+                    <h1 class="text-4xl md-text-5xl font-bold text-teal-400 mb-4">
+                        QUSISデモデイ
+                    </h1>
+                    <p class="text-xl text-white mb-1">次世代起業家たちのピッチイベント</p>
+                    <p class="text-lg text-gray-300">リアルタイムでチャットや投げ銭を通して起業家たちを応援しよう</p>
+                    <div class="mt-6">
+                        <p class="text-gray-400">時間的貢献でQU-coinを獲得し、お気に入りのピッチを応援しよう</p>
+                    </div>
+                </section>
+
+                <!-- CTA -->
+                <section class="mb-16 bg-gray-900-50 backdrop-blur-sm rounded-lg p-8 border border-gray-700">
+                    <div class="space-y-4">
+                        <a
+                            href="/register"
+                            class="inline-flex items-center space-x-2 bg-teal-500 hover-bg-teal-600 text-white font-medium px-8 py-3 rounded-lg transition-colors"
+                        >
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
+                            </svg>
+                            <span>アカウントを作成</span>
+                        </a>
+                        <p class="text-gray-400">
+                            既にアカウントをお持ちの方は 
+                            <a
+                                href="/login"
+                                class="text-teal-400 hover-text-teal-300 underline"
+                            >
+                                こちらからログイン
+                            </a>
+                        </p>
+                    </div>
+                </section>
+
+                <!-- Today's Schedule -->
+                <section class="mb-16 bg-gray-900-30 backdrop-blur-sm rounded-lg p-6 border border-gray-700">
+                    <h2 class="text-2xl font-bold mb-6">本日のタイムスケジュール</h2>
+                    <div id="schedule-list">
+                        <!-- スケジュールリストがここに動的に挿入されます -->
+                        <div class="text-gray-400 text-center py-8">
+                            本日のスケジュールを読み込み中...
+                        </div>
+                    </div>
+                </section>
+
+            </div>
+        </main>
+
+        <!-- Background effects -->
+        <div class="absolute inset-0 overflow-hidden">
+            <div class="absolute -top-40 -right-40 w-80 h-80 bg-effect-1"></div>
+            <div class="absolute -bottom-40 -left-40 w-80 h-80 bg-effect-2"></div>
+        </div>
+    </div>
+
+    <script>
+        // APIからピッチデータを取得してスケジュールを表示
+        async function loadSchedule() {
+            try {
+                const response = await fetch('/api/pitches');
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                const pitches = Array.isArray(data) ? data : (data.pitches || []);
+                
+                const scheduleContainer = document.getElementById('schedule-list');
+                
+                if (pitches.length === 0) {
+                    scheduleContainer.innerHTML = `
+                        <div class="text-gray-400 text-center py-8">
+                            本日のスケジュールはまだ公開されていません
+                        </div>
+                    `;
+                    return;
+                }
+                
+                // ピッチリストを表示
+                const pitchCards = pitches.map(pitch => `
+                    <div class="bg-gray-800-50 rounded-lg p-4 border border-gray-600 flex items-center justify-between">
+                        <div class="flex items-center space-x-4">
+                            <div class="bg-teal-500 p-3 rounded-lg" style="background-color: rgba(20, 184, 166, 0.2);">
+                                <svg class="w-6 h-6 text-teal-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                </svg>
+                            </div>
+                            <div class="text-left">
+                                <h3 class="text-lg font-semibold text-white">${escapeHtml(pitch.title || 'タイトル未設定')}</h3>
+                                <p class="text-gray-400">${escapeHtml(pitch.description || '')}</p>
+                                <p class="text-sm text-teal-400">チーム: ${escapeHtml(pitch.team || '未設定')}</p>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <div class="px-3 py-1 rounded-full text-xs font-medium ${getStatusStyle(pitch.status)}">
+                                ${getStatusText(pitch.status)}
+                            </div>
+                            <p class="text-sm text-gray-400 mt-1">${escapeHtml(pitch.schedule || '時間未定')}</p>
+                        </div>
+                    </div>
+                `).join('');
+                
+                scheduleContainer.innerHTML = `<div class="space-y-4">${pitchCards}</div>`;
+                
+            } catch (error) {
+                console.error('スケジュールの取得に失敗しました:', error);
+                document.getElementById('schedule-list').innerHTML = `
+                    <div class="text-red-400 text-center py-8">
+                        スケジュールの読み込みに失敗しました
+                    </div>
+                `;
+            }
+        }
+        
+        // HTMLエスケープ関数
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        // ステータスに応じたスタイルを返す
+        function getStatusStyle(status) {
+            switch (status) {
+                case 'live':
+                    return 'bg-red-500/20 text-red-400 border border-red-500/30';
+                case 'upcoming':
+                    return 'bg-blue-500/20 text-blue-400 border border-blue-500/30';
+                case 'ended':
+                    return 'bg-gray-500/20 text-gray-400 border border-gray-500/30';
+                default:
+                    return 'bg-gray-500/20 text-gray-400 border border-gray-500/30';
+            }
+        }
+        
+        // ステータスに応じたテキストを返す
+        function getStatusText(status) {
+            switch (status) {
+                case 'live':
+                    return 'ライブ中';
+                case 'upcoming':
+                    return '開始前';
+                case 'ended':
+                    return '終了';
+                default:
+                    return '未定';
+            }
+        }
+        
+        // ページ読み込み時にスケジュールを取得
+        document.addEventListener('DOMContentLoaded', loadSchedule);
+    </script>
+</body>
+</html>
