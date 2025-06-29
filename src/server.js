@@ -32,7 +32,21 @@ app.use(express.urlencoded({ limit: '150mb', extended: true }));
 
 // 静的ファイルを配信（本番環境用）
 if (process.env.NODE_ENV === 'production') {
-  app.use(express.static(path.join(__dirname, '../dist')));
+  const distPath = path.join(__dirname, '../dist');
+  console.log('📁 Checking dist folder:', distPath);
+  
+  // distフォルダの存在確認
+  import('fs').then(fs => {
+    if (fs.existsSync(distPath)) {
+      console.log('✅ Dist folder exists');
+      const files = fs.readdirSync(distPath);
+      console.log('📁 Dist files:', files);
+    } else {
+      console.log('❌ Dist folder not found');
+    }
+  });
+  
+  app.use(express.static(distPath));
 }
 
 // API ルート
