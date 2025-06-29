@@ -21,7 +21,9 @@ dotenvFlow.config();
 // 1) Express アプリを作成
 const app = express();
 app.use(cors());
-app.use(express.json());
+// ファイルサイズ制限を追加
+app.use(express.json({ limit: '150mb' }));           // 追加
+app.use(express.urlencoded({ limit: '150mb', extended: true })); // 追加
 
 // 2) ping エンドポイント
 app.get('/ping', (_req, res) => {
@@ -29,9 +31,11 @@ app.get('/ping', (_req, res) => {
 });
 
 // 3) 各 API ルート
-import authRoutes from './routes/auth.js';  // 追加
+import authRoutes from './routes/auth.js';  
+import coinsRoutes from './routes/coins.js';
 
-app.use('/api/auth', authRoutes);           // 追加
+app.use('/api/auth', authRoutes);          
+app.use('/api/coins', coinsRoutes);
 app.use('/api/pitches', pitchesRoutes);
 app.use('/api/tips', tipsRoutes);
 app.use('/api/messages', messagesRoutes);
@@ -39,7 +43,13 @@ app.use('/api/contributions', contributionsRoutes);
 
 // 4) HTTP サーバーを立ち上げてから Socket.io を紐づける
 const server = http.createServer(app);
-const io = new IOServer(server, { cors: { origin: '*' } });
+const io = new IOServer(server, { 
+  cors: { 
+    origin: ["http://localhost:5173", "http://localhost:5174"],
+    methods: ["GET", "POST"],
+    credentials: true
+  } 
+});
 
 // MongoDB 接続
 const uri = process.env.MONGODB_URI;
