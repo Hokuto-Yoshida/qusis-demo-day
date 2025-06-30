@@ -8,5 +8,6 @@ const pitchSchema = new mongoose.Schema({
   totalTips:   { type: Number, default: 0 },
   participants:{ type: Number, default: 0 },
   schedule:    String,
+  createdBy:   { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, // 追加
 }, { timestamps: true });
 export default mongoose.model('Pitch', pitchSchema);

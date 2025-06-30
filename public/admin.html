@@ -773,7 +773,7 @@
                 // 総ギフト額取得
                 const giftsResponse = await fetch('/api/admin/total-coins', {
                     headers: {
-                        'Authorization': `Bearer ${token}`,
+                        'x-user-id': token,  // ✅
                         'Content-Type': 'application/json'
                     }
                 });
@@ -787,7 +787,7 @@
                 // ユーザー一覧取得
                 const usersResponse = await fetch('/api/admin/users', {
                     headers: {
-                        'Authorization': `Bearer ${token}`,
+                        'x-user-id': token,  // ✅
                         'Content-Type': 'application/json'
                     }
                 });
@@ -801,7 +801,7 @@
                 // ピッチデータ取得
                 const pitchesResponse = await fetch('/api/pitches', {
                     headers: {
-                        'Authorization': `Bearer ${token}`,
+                        'x-user-id': token,  // ✅
                         'Content-Type': 'application/json'
                     }
                 });
@@ -815,7 +815,7 @@
                 // 時間貢献履歴取得
                 const contributionsResponse = await fetch('/api/admin/time-contributions', {
                     headers: {
-                        'Authorization': `Bearer ${token}`,
+                        'x-user-id': token,  // ✅
                         'Content-Type': 'application/json'
                     }
                 });
@@ -921,7 +921,7 @@
                 const response = await fetch(`/api/pitches/${pitchId}/status`, {
                     method: 'PUT',
                     headers: {
-                        'Authorization': `Bearer ${token}`,
+                        'x-user-id': token,  // ✅
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({ status: newStatus })
@@ -954,7 +954,7 @@
                 const response = await fetch(`/api/pitches/${pitchId}`, {
                     method: 'DELETE',
                     headers: {
-                        'Authorization': `Bearer ${token}`,
+                        'x-user-id': token,  // ✅
                         'Content-Type': 'application/json'
                     }
                 });
@@ -1110,7 +1110,7 @@
                 const response = await fetch(`/api/admin/users/${userId}`, {
                     method: 'DELETE',
                     headers: {
-                        'Authorization': `Bearer ${token}`,
+                        'x-user-id': token,  // ✅
                         'Content-Type': 'application/json'
                     }
                 });
@@ -1138,7 +1138,7 @@
                 const response = await fetch('/api/admin/reset-time-contributions', {
                     method: 'POST',
                     headers: {
-                        'Authorization': `Bearer ${token}`,
+                        'x-user-id': token,  // ✅
                         'Content-Type': 'application/json'
                     }
                 });

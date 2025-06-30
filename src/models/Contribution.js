@@ -10,7 +10,7 @@ const contributionSchema = new mongoose.Schema({
   type: {
     type: String,
     required: true,
-    enum: ['offline_hearing', 'online_hearing', 'event_participation', 'other']
+    enum: ['オフラインヒアリング', 'オンラインヒアリング', 'QUSISイベント参加', 'other'] // 日本語に変更
   },
   hours: {
     type: Number,

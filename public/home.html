@@ -543,7 +543,7 @@
                 const token = localStorage.getItem('authToken');
                 const response = await fetch('/api/pitches', {
                     headers: {
-                        'Authorization': `Bearer ${token}`,
+                        'x-user-id': token,  // 修正: Bearerではなくx-user-id
                         'Content-Type': 'application/json'
                     }
                 });

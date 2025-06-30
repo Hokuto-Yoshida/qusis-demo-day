@@ -2,6 +2,7 @@
 import express from 'express';
 import bcrypt from 'bcryptjs';
 import User from '../models/User.js';
+import { authenticate } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -46,7 +47,7 @@ router.post('/register', async (req, res) => {
         team: user.team,
         coinBalance: user.coinBalance
       },
-      token: 'mock-jwt-token'
+      token: user._id.toString() // 簡易トークン（実際のJWTではない）
     });
   } catch (error) {
     console.error('Register error:', error);
@@ -92,7 +93,7 @@ router.post('/login', async (req, res) => {
         team: user.team,
         coinBalance: user.coinBalance
       },
-      token: 'mock-jwt-token'
+      token: user._id.toString() // 簡易トークン（実際のJWTではない）
     });
   } catch (error) {
     console.error('Login error:', error);
@@ -108,20 +109,22 @@ router.post('/logout', (req, res) => {
   res.json({ success: true, message: 'ログアウトしました' });
 });
 
-// ユーザー情報取得
-router.get('/me', async (req, res) => {
+// ユーザー情報取得（認証必要）
+router.get('/me', authenticate, async (req, res) => {
   try {
-    // TODO: JWTトークンの検証を実装
     res.json({
       success: true,
       user: {
-        id: '1',
-        email: 'test@example.com',
-        name: 'Test User',
-        role: 'viewer'
+        id: req.user._id,
+        email: req.user.email,
+        name: req.user.name,
+        role: req.user.role,
+        team: req.user.team,
+        coinBalance: req.user.coinBalance
       }
     });
   } catch (error) {
+    console.error('ユーザー情報取得エラー:', error);
     res.status(500).json({
       success: false,
       message: 'サーバーエラーが発生しました'

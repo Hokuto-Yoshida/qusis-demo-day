@@ -135,7 +135,7 @@ io.on('connection', async socket => {
   socket.emit('total-coins-updated', total);
 });
 
-const port = process.env.PORT || 4000;
+const port = process.env.PORT || 4001;  // 4000 → 4001に変更
 server.listen(port, '0.0.0.0', () => {
   console.log(`🚀 Server listening on port ${port}`);
   console.log(`📱 HTML版: http://localhost:${port}`);
