@@ -773,38 +773,27 @@
         let selectedRate = 0;
         let socket = null;
 
-        // 取引タイプのアイコンマッピング
+        // 取引タイプのアイコンマッピング（バックエンドのタイプに合わせて修正）
         const transactionIcons = {
-            gift_send: {
+            'spent': {
                 icon: `<svg class="transaction-icon red" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v13m0-13V6a2 2 0 112 0v1m-2 0V5.5A1.5 1.5 0 0113.5 4h-3A1.5 1.5 0 019 5.5V6m3 2a4 4 0 00-4 4v6a1 1 0 001 1h6a1 1 0 001-1v-6a4 4 0 00-4-4z"/>
-                       </svg>`,
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v13m0-13V6a2 2 0 112 0v1m-2 0V5.5A1.5 1.5 0 0113.5 4h-3A1.5 1.5 0 019 5.5V6m3 2a4 4 0 00-4 4v6a1 1 0 001 1h6a1 1 0 001-1v-6a4 4 0 00-4-4z"/>
+                    </svg>`,
                 label: '投げ銭'
             },
-            chat_participation: {
-                icon: `<svg class="transaction-icon blue" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
-                       </svg>`,
-                label: 'チャット参加'
-            },
-            offline_hearing: {
-                icon: `<svg class="transaction-icon blue" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"/>
-                       </svg>`,
-                label: 'オフラインヒアリング'
-            },
-            online_hearing: {
+            'earned': {
                 icon: `<svg class="transaction-icon green" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
-                       </svg>`,
-                label: 'オンラインヒアリング'
-            },
-            event_participation: {
-                icon: `<svg class="transaction-icon yellow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/>
-                       </svg>`,
-                label: 'イベント参加'
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                    </svg>`,
+                label: 'コイン獲得'
             }
+        };
+
+        // 貢献タイプのマッピング（英語 → 日本語）
+        const contributionTypeMap = {
+            'offline_hearing': 'オフラインヒアリング',
+            'online_hearing': 'オンラインヒアリング', 
+            'event_participation': 'QUSISイベント参加'
         };
 
         // 認証チェック
@@ -830,22 +819,58 @@
         // ユーザー情報を表示
         function displayUserInfo() {
             document.getElementById('user-info').textContent = `${currentUser.name}さんのQU-coin状況`;
-            updateCoinDisplay();
+            loadBalance(); // 残高専用エンドポイントを呼び出し
         }
 
-        // コイン表示を更新
-        function updateCoinDisplay() {
+        // 残高情報を取得（専用エンドポイント使用）
+        async function loadBalance() {
+            try {
+                const token = localStorage.getItem('authToken');
+                const response = await fetch('/api/coins/balance', {
+                    headers: {
+                        'x-user-id': token, // ユーザーIDをヘッダーに設定
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    
+                    // 残高表示を更新
+                    document.getElementById('current-balance').textContent = `${data.balance.toLocaleString()} QU`;
+                    document.getElementById('total-earned').textContent = `${data.totalEarned.toLocaleString()} QU`;
+                    document.getElementById('total-spent').textContent = `${data.totalSpent.toLocaleString()} QU`;
+                    
+                    // ユーザー情報も同期
+                    currentUser.coinBalance = data.balance;
+                    localStorage.setItem('user', JSON.stringify(currentUser));
+                    
+                } else {
+                    console.error('残高取得に失敗');
+                    // フォールバック: ユーザー情報から表示
+                    updateCoinDisplayFallback();
+                }
+            } catch (error) {
+                console.error('残高取得エラー:', error);
+                updateCoinDisplayFallback();
+            }
+        }
+
+        // フォールバック: ユーザー情報から残高表示
+        function updateCoinDisplayFallback() {
             if (!currentUser) return;
             
             const balance = currentUser.coinBalance || 0;
             document.getElementById('current-balance').textContent = `${balance.toLocaleString()} QU`;
             
-            // 取引履歴から計算
-            const earned = transactions.filter(t => t.amount > 0).reduce((sum, t) => sum + t.amount, 0);
-            const spent = Math.abs(transactions.filter(t => t.amount < 0).reduce((sum, t) => sum + t.amount, 0));
-            
-            document.getElementById('total-earned').textContent = `${earned.toLocaleString()} QU`;
-            document.getElementById('total-spent').textContent = `${spent.toLocaleString()} QU`;
+            // 取引履歴から計算（取得済みの場合）
+            if (transactions.length > 0) {
+                const earned = transactions.filter(t => t.amount > 0).reduce((sum, t) => sum + t.amount, 0);
+                const spent = Math.abs(transactions.filter(t => t.amount < 0).reduce((sum, t) => sum + t.amount, 0));
+                
+                document.getElementById('total-earned').textContent = `${earned.toLocaleString()} QU`;
+                document.getElementById('total-spent').textContent = `${spent.toLocaleString()} QU`;
+            }
         }
 
         // 取引履歴を取得
@@ -854,7 +879,7 @@
                 const token = localStorage.getItem('authToken');
                 const response = await fetch('/api/coins/transactions', {
                     headers: {
-                        'x-user-id': token,  // ✅
+                        'x-user-id': token, // ユーザーIDをヘッダーに設定
                         'Content-Type': 'application/json'
                     }
                 });
@@ -862,7 +887,6 @@
                 if (response.ok) {
                     transactions = await response.json();
                     displayTransactions();
-                    updateCoinDisplay();
                 } else {
                     console.error('取引履歴の取得に失敗');
                     showEmptyHistory();
@@ -888,13 +912,13 @@
             container.innerHTML = transactions.map(transaction => createTransactionItem(transaction)).join('');
         }
 
-        // 取引アイテムを作成
+        // 取引アイテムを作成（バックエンドの形式に対応）
         function createTransactionItem(transaction) {
-            const iconInfo = transactionIcons[transaction.type] || transactionIcons.chat_participation;
+            const iconInfo = transactionIcons[transaction.type] || transactionIcons.earned;
             const isPositive = transaction.amount > 0;
             const amountClass = isPositive ? 'positive' : 'negative';
             const amountPrefix = isPositive ? '+' : '';
-            const time = new Date(transaction.createdAt).toLocaleString('ja-JP');
+            const time = new Date(transaction.timestamp).toLocaleString('ja-JP');
 
             return `
                 <div class="transaction-item">
@@ -965,7 +989,7 @@
             document.getElementById('earn-submit-btn').disabled = false;
         }
 
-        // コイン獲得を実行
+        // コイン獲得を実行（修正版）
         async function submitEarnCoins() {
             if (!selectedEarnMethod || !selectedRate) return;
             
@@ -980,14 +1004,16 @@
             
             try {
                 const token = localStorage.getItem('authToken');
-                const response = await fetch('/api/coins/earn', {
+                
+                // 正しいエンドポイントとタイプ名で送信
+                const response = await fetch('/api/contributions', {
                     method: 'POST',
                     headers: {
-                        'x-user-id': token,  // ✅
+                        'x-user-id': token, // ユーザーIDをヘッダーに設定
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
-                        type: selectedEarnMethod,
+                        type: contributionTypeMap[selectedEarnMethod], // 日本語に変換
                         hours: hours
                     })
                 });
@@ -999,14 +1025,15 @@
                     currentUser.coinBalance = result.newBalance;
                     localStorage.setItem('user', JSON.stringify(currentUser));
                     
-                    // 取引履歴を再取得
+                    // 残高と取引履歴を再取得
+                    await loadBalance();
                     await loadTransactions();
                     
                     alert(`${totalCoins} QUcoinを獲得しました！`);
                     closeEarnModal();
                 } else {
                     const error = await response.json();
-                    alert(error.message || 'コイン獲得に失敗しました');
+                    alert(error.error || 'コイン獲得に失敗しました');
                 }
             } catch (error) {
                 console.error('コイン獲得エラー:', error);
@@ -1029,16 +1056,15 @@
                         if (data.userId === currentUser.id) {
                             currentUser.coinBalance = data.newBalance;
                             localStorage.setItem('user', JSON.stringify(currentUser));
-                            updateCoinDisplay();
+                            loadBalance(); // 残高を再取得
                         }
                     });
                     
                     // 新しい取引の通知
                     socket.on('new-transaction', (transaction) => {
                         if (transaction.userId === currentUser.id) {
-                            transactions.unshift(transaction);
-                            displayTransactions();
-                            updateCoinDisplay();
+                            loadTransactions(); // 取引履歴を再取得
+                            loadBalance(); // 残高も更新
                         }
                     });
                 }
