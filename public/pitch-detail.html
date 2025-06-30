@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ピッチ詳細 - QUSIS デモデイ</title>
     <script src="js/header.js"></script>
-    <script type="module" src="/js/pages/pitch-detail.js"></script>
     <style>
         * {
             margin: 0;
@@ -750,7 +749,7 @@
                 const token = localStorage.getItem('authToken');
                 const response = await fetch(`/api/pitches/${pitchId}`, {
                     headers: {
-                        'x-user-id': token,  // ✅
+                        'Authorization': `Bearer ${token}`, // ← ここを修正
                         'Content-Type': 'application/json'
                     }
                 });
@@ -813,7 +812,7 @@
                 const token = localStorage.getItem('authToken');
                 const response = await fetch(`/api/messages/${currentPitch._id}`, {
                     headers: {
-                        'x-user-id': token,  // ✅
+                        'Authorization': `Bearer ${token}`, // ← ここを修正
                         'Content-Type': 'application/json'
                     }
                 });
@@ -872,7 +871,7 @@
                 const response = await fetch('/api/messages', {
                     method: 'POST',
                     headers: {
-                        'x-user-id': token,  // ✅
+                        'Authorization': `Bearer ${token}`, // ✅
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
@@ -925,7 +924,7 @@
                 const response = await fetch('/api/tips', {
                     method: 'POST',
                     headers: {
-                        'x-user-id': token,  // ✅
+                        'Authorization': `Bearer ${token}`, 
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
@@ -968,7 +967,7 @@
                 const token = localStorage.getItem('authToken');
                 const response = await fetch(`/api/tips/${currentPitch._id}/supporters`, {
                     headers: {
-                        'x-user-id': token,  // ✅
+                        'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json'
                     }
                 });
