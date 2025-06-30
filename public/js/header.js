@@ -505,34 +505,30 @@ class Header {
     }
 }
 
-// 認証が必要なページでヘッダーを初期化（改善版）
-async function initializeHeader() {
+// 認証が必要なページでヘッダーを初期化（完全シンプル版）
+function initializeHeader() {
     const token = localStorage.getItem('authToken');
-    if (token) {
-        // トークンの有効性を簡単にチェック
+    const user = localStorage.getItem('user');
+    
+    console.log('認証チェック - Token:', !!token);
+    console.log('認証チェック - User:', !!user);
+    
+    // トークンとユーザー情報の両方があればヘッダー表示
+    if (token && user) {
         try {
-            const response = await fetch('/api/auth/verify', {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                }
-            });
-            
-            if (response.ok) {
-                new Header();
-            } else {
-                // 無効なトークンの場合はクリアしてログインページへ
-                localStorage.removeItem('authToken');
-                localStorage.removeItem('user');
-                window.location.href = 'login.html';
-            }
-        } catch (error) {
-            // サーバーエラーの場合はヘッダーを表示（オフライン対応）
-            console.error('認証確認エラー:', error);
+            // ユーザー情報が有効なJSONかチェック
+            JSON.parse(user);
+            console.log('ヘッダー初期化開始');
             new Header();
+        } catch (error) {
+            console.error('ユーザー情報が無効:', error);
+            // 無効なデータをクリア
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('user');
+            window.location.href = 'login.html';
         }
     } else {
-        // トークンがない場合はログインページへ
+        console.log('認証情報が不足 - ログインページへリダイレクト');
         window.location.href = 'login.html';
     }
 }
