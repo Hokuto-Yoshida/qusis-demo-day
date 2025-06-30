@@ -18,14 +18,14 @@ window.addEventListener('DOMContentLoaded', () => {
     return;
   }
 
-  // DOM 要素取得（HTML 側の id を合わせる）
-  const coverImg    = document.getElementById('cover-image');
-  const titleEl     = document.getElementById('pitch-title');
-  const descEl      = document.getElementById('pitch-description');
-  const teamEl      = document.getElementById('cover-team');
-  const tipsEl      = document.getElementById('total-amount');
-  const tipButtons  = document.querySelectorAll('.tip-button');
-  const toast       = document.getElementById('toast');
+  // DOM 要素取得
+  const coverContainer = document.querySelector('.cover-image');
+  const titleEl        = document.getElementById('pitch-title');
+  const descEl         = document.getElementById('pitch-description');
+  const teamEl         = document.getElementById('cover-team');
+  const tipsEl         = document.getElementById('total-amount');
+  const tipButtons     = document.querySelectorAll('.tip-button');
+  const toast          = document.getElementById('toast');
 
   // 初期データロード & イベントバインド
   loadDetail();
@@ -40,9 +40,9 @@ window.addEventListener('DOMContentLoaded', () => {
       if (!res.ok) throw new Error('取得失敗');
       const p = await res.json();
 
-      // カバー画像
-      if (p.coverImage && coverImg.tagName === 'IMG') {
-        coverImg.src = p.coverImage;
+      // カバー画像を背景に設定
+      if (p.coverImage && coverContainer) {
+        coverContainer.style.backgroundImage = `url('${p.coverImage}')`;
       }
       titleEl.textContent = p.title;
       descEl.textContent  = p.description;
@@ -70,7 +70,7 @@ window.addEventListener('DOMContentLoaded', () => {
       const res = await fetch(`${BASE_URL}/api/tips`, {
         method: 'POST',
         headers: {
-          'Content-Type':'application/json',
+          'Content-Type': 'application/json',
           Authorization: `Bearer ${localStorage.getItem('authToken')}`
         },
         body: JSON.stringify({ pitchId, amount })
