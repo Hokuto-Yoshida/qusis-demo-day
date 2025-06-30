@@ -91,6 +91,15 @@ app.get('/usage', (req, res) => {
   res.sendFile(path.join(__dirname, '../public/usage.html'));
 });
 
+// ヘルスチェック用エンドポイント
+app.get('/ping', (req, res) => {
+    res.status(200).json({ 
+        status: 'OK',
+        timestamp: new Date().toISOString(),
+        uptime: process.uptime()
+    });
+});
+
 // React版への切り替えルート（デバッグ用）
 if (process.env.NODE_ENV === 'production') {
   app.get('/react/*', (req, res) => {
