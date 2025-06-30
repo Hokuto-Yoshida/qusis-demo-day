@@ -1,4 +1,4 @@
-// src/routes/messages.js
+// src/routes/messages.js - 修正版
 import { Router } from 'express';
 import Message from '../models/Message.js';
 import Pitch from '../models/Pitch.js';
@@ -10,10 +10,10 @@ const router = Router();
 // チャット投稿（認証必要）
 router.post('/', authenticate, async (req, res) => {
   try {
-    const { pitch: pitchId, content } = req.body;
+    const { pitch: pitchId, content, isSuperchat } = req.body; // ✅ isSuperchat フラグを追加
     const userId = req.user._id;
     
-    console.log('💬 チャットメッセージ:', { pitchId, userId, content });
+    console.log('💬 チャットメッセージ:', { pitchId, userId, content, isSuperchat });
     
     // バリデーション
     if (!pitchId || !content || content.trim().length === 0) {
@@ -39,12 +39,25 @@ router.post('/', authenticate, async (req, res) => {
       content: content.trim() 
     });
 
-    // ピッチの参加者数をインクリメント（重複参加者の考慮なし）
-    await Pitch.findByIdAndUpdate(pitchId, { $inc: { participants: 1 } });
+    // ✅ スーパーチャット（投げ銭メッセージ）の場合は、コイン獲得と参加者数増加をスキップ
+    let coinReward = 0;
+    let newBalance = req.user.coinBalance;
+    
+    if (!isSuperchat) {
+      // 通常のチャットメッセージの場合のみ報酬を付与
+      
+      // ピッチの参加者数をインクリメント（重複参加者の考慮なし）
+      await Pitch.findByIdAndUpdate(pitchId, { $inc: { participants: 1 } });
 
-    // チャット参加報酬（20コイン）
-    const chatReward = 20;
-    await User.findByIdAndUpdate(userId, { $inc: { coinBalance: chatReward } });
+      // チャット参加報酬（20コイン）
+      coinReward = 20;
+      await User.findByIdAndUpdate(userId, { $inc: { coinBalance: coinReward } });
+      newBalance = req.user.coinBalance + coinReward;
+      
+      console.log('✅ 通常チャット: コイン獲得', coinReward);
+    } else {
+      console.log('✅ スーパーチャット: コイン獲得なし');
+    }
 
     console.log('✅ チャットメッセージ作成成功:', message);
     
@@ -56,8 +69,8 @@ router.post('/', authenticate, async (req, res) => {
     res.status(201).json({
       success: true,
       message: populatedMessage,
-      coinReward: chatReward,
-      newBalance: req.user.coinBalance + chatReward
+      coinReward: coinReward,
+      newBalance: newBalance
     });
   } catch (err) {
     console.error('❌ チャットメッセージエラー:', err);

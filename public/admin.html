@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>管理者ダッシュボード - QUSIS デモデイ</title>
     <script src="js/header.js"></script>
-    <script type="module" src="/js/pages/admin.js"></script>
     <style>
         * {
             margin: 0;
@@ -115,6 +114,131 @@
             }
         }
         
+        .pitch-item {
+            border: 1px solid #e5e7eb;
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            background: #fafafa;
+        }
+
+        .pitch-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+        }
+
+        .pitch-info {
+            flex: 1;
+        }
+
+        .pitch-title {
+            font-size: 1.125rem;
+            font-weight: bold;
+            color: #111827;
+            margin-bottom: 0.25rem;
+        }
+
+        .pitch-team {
+            font-size: 0.875rem;
+            color: #7c3aed;
+            margin-bottom: 0.25rem;
+        }
+
+        .pitch-presenter {
+            font-size: 0.875rem;
+            color: #6b7280;
+        }
+
+        .pitch-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 1rem;
+            padding: 1rem;
+            background: white;
+            border-radius: 0.375rem;
+            margin-bottom: 1rem;
+            border: 1px solid #e5e7eb;
+        }
+
+        .pitch-stats .stat-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+
+        .pitch-stats .stat-label {
+            font-size: 0.75rem;
+            color: #6b7280;
+            margin-bottom: 0.25rem;
+        }
+
+        .pitch-stats .stat-value {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #111827;
+        }
+
+        .pitch-actions {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .btn-restart {
+            background: #f59e0b;
+            color: white;
+        }
+
+        .btn-restart:hover {
+            background: #d97706;
+        }
+
+        /* ステータスバッジの色調整 */
+        .status-badge.status-upcoming {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .status-badge.status-live {
+            background: #fef2f2;
+            color: #dc2626;
+            animation: pulse 2s infinite;
+        }
+
+        .status-badge.status-ended {
+            background: #f3f4f6;
+            color: #6b7280;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.7;
+            }
+        }
+
+        /* レスポンシブ対応 */
+        @media (max-width: 640px) {
+            .pitch-header {
+                flex-direction: column;
+                gap: 1rem;
+            }
+            
+            .pitch-actions {
+                justify-content: center;
+            }
+            
+            .pitch-stats {
+                grid-template-columns: 1fr;
+                gap: 0.5rem;
+            }
+        }
+
         .stat-card {
             background: white;
             border-radius: 0.5rem;
@@ -629,54 +753,30 @@
                 </div>
                 <div class="stat-card">
                     <div class="stat-content">
-                        <p>アクティブイベント</p>
-                        <p class="stat-value" id="active-events">0 件</p>
+                        <p>登録済みピッチ数</p>
+                        <p class="stat-value" id="total-pitches">0 件</p>
                     </div>
                     <svg class="stat-icon purple" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1m4 0h1m-6 4h8m-10-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                    </svg>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-content">
-                        <p>総参加者数</p>
-                        <p class="stat-value" id="total-viewers">0 人</p>
-                    </div>
-                    <svg class="stat-icon orange" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
                     </svg>
                 </div>
             </div>
 
             <div class="main-grid">
-                <!-- Active Events List -->
+                <!-- Pitch Management Panel -->
                 <div class="panel">
                     <div class="panel-header">
                         <svg class="panel-icon purple" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1m4 0h1m-6 4h8m-10-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
                         </svg>
-                        <h2 class="panel-title">アクティブイベント</h2>
+                        <h2 class="panel-title">ピッチ管理</h2>
                     </div>
                     <div class="panel-content">
-                        <div id="events-list">
-                            <!-- Events will be inserted here -->
+                        <div id="pitches-list">
+                            <!-- Pitches will be inserted here -->
                         </div>
-                        <div id="empty-events" class="empty-state hidden">
-                            アクティブなイベントはありません
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Recent Gifts -->
-                <div class="panel">
-                    <div class="panel-header">
-                        <svg class="panel-icon green" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
-                        </svg>
-                        <h2 class="panel-title">最近のギフト送信</h2>
-                    </div>
-                    <div class="panel-content">
-                        <div class="gift-list" id="gifts-list">
-                            <!-- Gifts will be inserted here -->
+                        <div id="empty-pitches" class="empty-state hidden">
+                            登録されているピッチはありません
                         </div>
                     </div>
                 </div>
@@ -802,15 +902,15 @@
                 // ピッチデータ取得
                 const pitchesResponse = await fetch('/api/pitches', {
                     headers: {
-                        'x-user-id': token,  // ✅
+                        'x-user-id': token,
                         'Content-Type': 'application/json'
                     }
                 });
-                
+
                 if (pitchesResponse.ok) {
                     pitches = await pitchesResponse.json();
                     updatePitchStats();
-                    displayEvents();
+                    displayEvents(); // ← この行を追加
                 }
 
                 // 時間貢献履歴取得
@@ -836,17 +936,25 @@
 
         // ピッチ統計を更新
         function updatePitchStats() {
-            const activeEvents = pitches.filter(p => p.status === 'live').length;
+            const totalPitches = pitches.length;
             const totalViewers = pitches.reduce((sum, p) => sum + (p.participants || 0), 0);
             
-            document.getElementById('active-events').textContent = `${activeEvents} 件`;
-            document.getElementById('total-viewers').textContent = `${totalViewers} 人`;
+            // 要素の存在チェック
+            const totalPitchesEl = document.getElementById('total-pitches');
+            const totalViewersEl = document.getElementById('total-viewers');
+            
+            if (totalPitchesEl) {
+                totalPitchesEl.textContent = `${totalPitches} 件`;
+            }
+            if (totalViewersEl) {
+                totalViewersEl.textContent = `${totalViewers} 人`;
+            }
         }
 
         // イベント一覧を表示
         function displayEvents() {
-            const container = document.getElementById('events-list');
-            const emptyState = document.getElementById('empty-events');
+            const container = document.getElementById('pitches-list');
+            const emptyState = document.getElementById('empty-pitches');
 
             if (pitches.length === 0) {
                 container.innerHTML = '';
@@ -855,74 +963,107 @@
             }
 
             emptyState.classList.add('hidden');
-            container.innerHTML = pitches.map(pitch => createEventItem(pitch)).join('');
+            container.innerHTML = pitches.map(pitch => createPitchItem(pitch)).join('');
         }
 
-        // イベントアイテムを作成
-        function createEventItem(pitch) {
-            const statusClass = pitch.status === 'live' ? 'live' : 'ended';
-            const statusText = pitch.status === 'live' ? 'LIVE' : '終了';
+        // ピッチアイテムを作成（修正版）
+        function createPitchItem(pitch) {
+            const statusInfo = getStatusInfo(pitch.status);
             
             return `
-                <div class="event-item">
-                    <div class="event-header">
-                        <div>
-                            <h3 class="event-title">${pitch.title}</h3>
-                            <p class="event-team">チーム: ${pitch.team}</p>
+                <div class="pitch-item">
+                    <div class="pitch-header">
+                        <div class="pitch-info">
+                            <h3 class="pitch-title">${pitch.title}</h3>
+                            <p class="pitch-team">チーム: ${pitch.team || '未設定'}</p>
                         </div>
-                        <span class="event-status ${statusClass}">${statusText}</span>
+                        <span class="status-badge ${statusInfo.className}">${statusInfo.label}</span>
                     </div>
-                    <div class="event-stats">
-                        <div>参加者: <strong>${pitch.participants || 0}</strong></div>
-                        <div>ギフト総額: <strong>${pitch.totalTips || 0}</strong></div>
-                        <div>ID: <strong>#${pitch._id}</strong></div>
+                    
+                    <div class="pitch-stats">
+                        <div class="stat-item">
+                            <span class="stat-label">参加者</span>
+                            <span class="stat-value">${pitch.participants || 0}人</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">ギフト総額</span>
+                            <span class="stat-value">${pitch.totalTips || 0} QU</span>
+                        </div>
                     </div>
-                    <div class="event-actions">
-                        ${getStatusButton(pitch)}
+                    
+                    <div class="pitch-actions">
+                        ${getStatusButtons(pitch)}
                         <button class="btn btn-delete" onclick="handleDeletePitch('${pitch._id}', '${pitch.title}')">
                             <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
                             </svg>
-                            <span>削除</span>
+                            削除
                         </button>
                     </div>
                 </div>
             `;
         }
 
-        // ステータスボタンを取得
-        function getStatusButton(pitch) {
+        // ステータス情報を取得（修正版）
+        function getStatusInfo(status) {
+            switch (status) {
+                case 'live':
+                    return { label: 'ライブ中', className: 'status-live' };
+                case 'ended':
+                    return { label: '終了', className: 'status-ended' };
+                default:
+                    return { label: '未開始', className: 'status-upcoming' };
+            }
+        }
+
+        // ステータスボタンを取得（修正版）
+        function getStatusButtons(pitch) {
+            const buttons = [];
+            
             if (pitch.status === 'upcoming') {
-                return `
+                buttons.push(`
                     <button class="btn btn-start" onclick="handleStatusChange('${pitch._id}', 'live')">
                         <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1m4 0h1m-6 4h8m-10-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                         </svg>
-                        <span>開始</span>
+                        開始
                     </button>
-                `;
+                `);
             }
+            
             if (pitch.status === 'live') {
-                return `
+                buttons.push(`
                     <button class="btn btn-end" onclick="handleStatusChange('${pitch._id}', 'ended')">
                         <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                         </svg>
-                        <span>終了</span>
+                        終了
                     </button>
-                `;
+                `);
             }
-            return '<span class="admin-label">終了済み</span>';
+            
+            if (pitch.status === 'ended') {
+                buttons.push(`
+                    <button class="btn btn-restart" onclick="handleStatusChange('${pitch._id}', 'upcoming')">
+                        <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                        </svg>
+                        リセット
+                    </button>
+                `);
+            }
+            
+            return buttons.join('');
         }
 
-        // ステータス変更
+        // ステータス変更（既存の関数をそのまま使用）
         async function handleStatusChange(pitchId, newStatus) {
             try {
                 const token = localStorage.getItem('authToken');
-                const response = await fetch(`/api/pitches/${pitchId}/status`, {
+                const response = await fetch(`/api/pitches/${pitchId}`, {
                     method: 'PUT',
                     headers: {
-                        'x-user-id': token,  // ✅
+                        'x-user-id': token,
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({ status: newStatus })
@@ -936,7 +1077,14 @@
                         updatePitchStats();
                         displayEvents();
                     }
-                    alert('ステータスを更新しました');
+                    
+                    const statusText = {
+                        'upcoming': '未開始',
+                        'live': 'ライブ中',
+                        'ended': '終了'
+                    };
+                    
+                    alert(`ステータスを「${statusText[newStatus]}」に更新しました`);
                 } else {
                     alert('ステータスの更新に失敗しました');
                 }
@@ -946,16 +1094,16 @@
             }
         }
 
-        // ピッチ削除
+        // ピッチ削除（既存の関数をそのまま使用）
         async function handleDeletePitch(pitchId, title) {
-            if (!confirm(`「${title}」を削除しますか？`)) return;
+            if (!confirm(`「${title}」を削除しますか？\n\n⚠️ この操作は取り消せません。関連する投げ銭データも削除されます。`)) return;
 
             try {
                 const token = localStorage.getItem('authToken');
                 const response = await fetch(`/api/pitches/${pitchId}`, {
                     method: 'DELETE',
                     headers: {
-                        'x-user-id': token,  // ✅
+                        'x-user-id': token,
                         'Content-Type': 'application/json'
                     }
                 });

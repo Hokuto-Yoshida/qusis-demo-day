@@ -1,4 +1,4 @@
-// src/routes/tips.js
+// src/routes/tips.js - サポーターランキング機能追加版
 import { Router } from 'express';
 import Tip from '../models/Tip.js';
 import Pitch from '../models/Pitch.js';
@@ -89,6 +89,71 @@ router.get('/:pitchId', async (req, res) => {
   } catch (err) {
     console.error('投げ銭履歴取得エラー:', err);
     res.status(500).json({ error: err.message });
+  }
+});
+
+// ✅ 新機能: 特定ピッチのサポーターランキング取得
+router.get('/:pitchId/supporters', async (req, res) => {
+  try {
+    const { pitchId } = req.params;
+    
+    // MongoDB Aggregation でユーザー別投げ銭総額を計算
+    const supporters = await Tip.aggregate([
+      // 該当ピッチの投げ銭のみフィルタ
+      { $match: { pitch: pitchId } },
+      
+      // ユーザー別にグループ化して総額計算
+      {
+        $group: {
+          _id: '$user',
+          totalAmount: { $sum: '$amount' },
+          tipCount: { $sum: 1 },
+          lastTipDate: { $max: '$createdAt' }
+        }
+      },
+      
+      // ユーザー情報を結合
+      {
+        $lookup: {
+          from: 'users',
+          localField: '_id',
+          foreignField: '_id',
+          as: 'userInfo'
+        }
+      },
+      
+      // userInfo配列を展開
+      { $unwind: '$userInfo' },
+      
+      // 投げ銭総額で降順ソート
+      { $sort: { totalAmount: -1 } },
+      
+      // 上位10名まで
+      { $limit: 10 },
+      
+      // 必要な情報のみ返す
+      {
+        $project: {
+          _id: 0,
+          userId: '$_id',
+          userName: '$userInfo.name',
+          userTeam: '$userInfo.team',
+          totalAmount: 1,
+          tipCount: 1,
+          lastTipDate: 1
+        }
+      }
+    ]);
+
+    console.log(`📊 ピッチ ${pitchId} のサポーターランキング:`, supporters);
+    
+    res.json(supporters);
+  } catch (err) {
+    console.error('サポーターランキング取得エラー:', err);
+    res.status(500).json({ 
+      success: false,
+      error: 'サポーターランキングの取得に失敗しました' 
+    });
   }
 });
 

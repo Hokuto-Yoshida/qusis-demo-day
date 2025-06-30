@@ -21,7 +21,7 @@ import messagesRoutes from './routes/messages.js';
 import contributionsRoutes from './routes/contributions.js';
 import authRoutes from './routes/auth.js';  
 import coinsRoutes from './routes/coins.js';
-
+import adminRoutes from './routes/admin.js';
 // .env ファイルの読み込み
 dotenvFlow.config();
 
@@ -53,7 +53,7 @@ app.use('/api/pitches', pitchesRoutes);
 app.use('/api/tips', tipsRoutes);
 app.use('/api/messages', messagesRoutes);
 app.use('/api/contributions', contributionsRoutes);
-
+app.use('/api/admin', adminRoutes);
 // HTMLページのルーティング
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, '../public/index.html'));
