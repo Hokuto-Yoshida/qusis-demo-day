@@ -534,7 +534,7 @@ class Header {
         // 1秒ごとにサーバーから残高を取得
         this.balanceUpdateInterval = setInterval(() => {
             this.fetchRealBalance();
-        }, 100);
+        }, 5000);
 
         // localStorageの変更も監視（即座の反映用）
         const updateFromLocalStorage = () => {
