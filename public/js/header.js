@@ -505,11 +505,35 @@ class Header {
     }
 }
 
-// 認証が必要なページでヘッダーを初期化
-function initializeHeader() {
+// 認証が必要なページでヘッダーを初期化（改善版）
+async function initializeHeader() {
     const token = localStorage.getItem('authToken');
     if (token) {
-        new Header();
+        // トークンの有効性を簡単にチェック
+        try {
+            const response = await fetch('/api/auth/verify', {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            if (response.ok) {
+                new Header();
+            } else {
+                // 無効なトークンの場合はクリアしてログインページへ
+                localStorage.removeItem('authToken');
+                localStorage.removeItem('user');
+                window.location.href = 'login.html';
+            }
+        } catch (error) {
+            // サーバーエラーの場合はヘッダーを表示（オフライン対応）
+            console.error('認証確認エラー:', error);
+            new Header();
+        }
+    } else {
+        // トークンがない場合はログインページへ
+        window.location.href = 'login.html';
     }
 }
 

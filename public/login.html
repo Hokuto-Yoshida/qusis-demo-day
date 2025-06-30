@@ -4,9 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ログイン - QUSIS デモデイ</title>
-    <!-- ↓ 後ろの /pages/login.js に注意 -->
-    <script type="module" src="/js/pages/login.js"></script>
-
     <style>
         * {
             margin: 0;
@@ -441,12 +438,33 @@
         emailInput.addEventListener('input', hideError);
         passwordInput.addEventListener('input', hideError);
 
-        // ページ読み込み時の認証チェック
-        window.addEventListener('load', () => {
+        // ページ読み込み時の認証チェック（トークン検証付き）
+        window.addEventListener('load', async () => {
             const token = localStorage.getItem('authToken');
             if (token) {
-                // 既にログイン済みの場合はホームにリダイレクト
-                window.location.href = 'home.html';
+                // トークンが有効かサーバーで検証
+                try {
+                    const response = await fetch('/api/auth/verify', {
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                    
+                    if (response.ok) {
+                        // 有効なトークンの場合のみリダイレクト
+                        window.location.href = 'home.html';
+                    } else {
+                        // 無効なトークンの場合はクリア
+                        localStorage.removeItem('authToken');
+                        localStorage.removeItem('user');
+                    }
+                } catch (error) {
+                    // ネットワークエラーまたはサーバーエラーの場合はトークンをクリア
+                    console.error('トークン検証エラー:', error);
+                    localStorage.removeItem('authToken');
+                    localStorage.removeItem('user');
+                }
             }
         });
     </script>
