@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ピッチ管理 - QUSIS デモデイ</title>
     <script src="js/header.js"></script>
-    <script type="module" src="/js/pages/pitch-management.js"></script>
     <style>
         * {
             margin: 0;
@@ -654,426 +653,433 @@
     </div>
 
     <script>
-        // グローバル変数
-        let currentUser = null;
-        let userPitches = [];
-        let isEditMode = false;
-        let editingPitch = null;
+    // グローバル変数
+    let currentUser = null;
+    let userPitches = [];
+    let isEditMode = false;
+    let editingPitch = null;
 
-        // 認証チェック
-        function checkAuth() {
-            const token = localStorage.getItem('authToken');
-            const userStr = localStorage.getItem('user');
-            
-            if (!token || !userStr) {
-                window.location.href = 'login.html';
-                return false;
-            }
-            
-            try {
-                currentUser = JSON.parse(userStr);
-                // 発表者以外はアクセス不可
-                if (currentUser.role !== 'presenter') {
-                    alert('このページは発表者のみアクセス可能です');
-                    window.location.href = 'home.html';
-                    return false;
-                }
-                return true;
-            } catch (error) {
-                console.error('ユーザー情報の解析に失敗:', error);
-                window.location.href = 'login.html';
-                return false;
-            }
+    // 認証チェック
+    function checkAuth() {
+        const token = localStorage.getItem('authToken');
+        const userStr = localStorage.getItem('user');
+        
+        if (!token || !userStr) {
+            window.location.href = 'login.html';
+            return false;
         }
+        
+        try {
+            currentUser = JSON.parse(userStr);
+            // 発表者以外はアクセス不可
+            if (currentUser.role !== 'presenter') {
+                alert('このページは発表者のみアクセス可能です');
+                window.location.href = 'home.html';
+                return false;
+            }
+            return true;
+        } catch (error) {
+            console.error('ユーザー情報の解析に失敗:', error);
+            window.location.href = 'login.html';
+            return false;
+        }
+    }
 
-        // ユーザーのピッチを取得
-        async function loadUserPitches() {
-            try {
-                const token = localStorage.getItem('authToken');
-                const response = await fetch(`/api/pitches/user/${currentUser.id}`, {
-                    headers: {
-                        'x-user-id': token,  // ✅
-                        'Content-Type': 'application/json'
-                    }
-                });
-
-                if (response.ok) {
-                    userPitches = await response.json();
-                    displayPitches();
-                } else {
-                    console.error('ピッチデータの取得に失敗');
-                    showEmptyState();
+    // ユーザーのピッチを取得（修正版）
+    async function loadUserPitches() {
+        try {
+            const token = localStorage.getItem('authToken');
+            // 全ピッチを取得して、現在のユーザーの物だけフィルタリング
+            const response = await fetch('/api/pitches', {
+                headers: {
+                    'x-user-id': token,
+                    'Content-Type': 'application/json'
                 }
-            } catch (error) {
-                console.error('ピッチデータの取得エラー:', error);
+            });
+
+            if (response.ok) {
+                const allPitches = await response.json();
+                // 現在のユーザーが作成したピッチのみ抽出
+                userPitches = allPitches.filter(pitch => 
+                    pitch.createdBy === currentUser.id || 
+                    pitch.team === currentUser.team ||
+                    pitch.presenterId === currentUser.id
+                );
+                displayPitches();
+            } else {
+                console.error('ピッチデータの取得に失敗');
                 showEmptyState();
             }
+        } catch (error) {
+            console.error('ピッチデータの取得エラー:', error);
+            showEmptyState();
+        }
+    }
+
+    // ピッチを表示
+    function displayPitches() {
+        const container = document.getElementById('pitches-list');
+        const emptyState = document.getElementById('empty-state');
+
+        if (userPitches.length === 0) {
+            container.innerHTML = '';
+            emptyState.classList.remove('hidden');
+            return;
         }
 
-        // ピッチを表示
-        function displayPitches() {
-            const container = document.getElementById('pitches-list');
-            const emptyState = document.getElementById('empty-state');
+        emptyState.classList.add('hidden');
+        container.innerHTML = userPitches.map(pitch => createPitchCard(pitch)).join('');
+    }
 
-            if (userPitches.length === 0) {
-                container.innerHTML = '';
-                emptyState.classList.remove('hidden');
-                return;
-            }
-
-            emptyState.classList.add('hidden');
-            container.innerHTML = userPitches.map(pitch => createPitchCard(pitch)).join('');
-        }
-
-        // ピッチカードを作成
-        function createPitchCard(pitch) {
-            const statusInfo = getStatusInfo(pitch.status);
-            
-            return `
-                <div class="pitch-card">
-                    <div class="pitch-content">
-                        <div class="pitch-header">
-                            <div class="pitch-badges">
-                                <span class="status-badge ${statusInfo.className}">
-                                    ${statusInfo.label}
-                                </span>
-                                <span class="team-badge">${currentUser.team}</span>
-                            </div>
-                            <div class="pitch-actions">
-                                <button class="action-btn edit" onclick="editPitch('${pitch._id}')">
-                                    <svg class="action-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
-                                    </svg>
-                                </button>
-                                <button class="action-btn delete" onclick="deletePitch('${pitch._id}')">
-                                    <svg class="action-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                                    </svg>
-                                </button>
-                            </div>
+    // ピッチカードを作成
+    function createPitchCard(pitch) {
+        const statusInfo = getStatusInfo(pitch.status);
+        
+        return `
+            <div class="pitch-card">
+                <div class="pitch-content">
+                    <div class="pitch-header">
+                        <div class="pitch-badges">
+                            <span class="status-badge ${statusInfo.className}">
+                                ${statusInfo.label}
+                            </span>
+                            <span class="team-badge">${currentUser.team}</span>
                         </div>
-
-                        <h2 class="pitch-title">${pitch.title}</h2>
-                        <p class="pitch-description">${pitch.description}</p>
-
-                        <div class="stats-grid">
-                            <div class="stat-item">
-                                <div class="stat-header participants">
-                                    <svg class="stat-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"/>
-                                    </svg>
-                                    <span>参加者</span>
-                                </div>
-                                <div class="stat-value">${pitch.participants || 0}</div>
-                                <div class="stat-unit">人</div>
-                            </div>
-                            <div class="stat-item">
-                                <div class="stat-header tips">
-                                    <svg class="stat-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
-                                    </svg>
-                                    <span>ギフト総額</span>
-                                </div>
-                                <div class="stat-value tips">${pitch.totalTips || 0}</div>
-                                <div class="stat-unit">QUcoin</div>
-                            </div>
-                        </div>
-
-                        <div class="button-group">
-                            <button class="btn btn-primary" onclick="editPitch('${pitch._id}')">
-                                <svg class="label-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div class="pitch-actions">
+                            <button class="action-btn edit" onclick="editPitch('${pitch._id}')">
+                                <svg class="action-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
                                 </svg>
-                                <span>編集</span>
                             </button>
-                            <button class="btn btn-danger" onclick="deletePitch('${pitch._id}')">
-                                <svg class="label-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <button class="action-btn delete" onclick="deletePitch('${pitch._id}')">
+                                <svg class="action-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
                                 </svg>
-                                <span>削除</span>
                             </button>
                         </div>
                     </div>
+
+                    <h2 class="pitch-title">${pitch.title}</h2>
+                    <p class="pitch-description">${pitch.description}</p>
+
+                    <div class="stats-grid">
+                        <div class="stat-item">
+                            <div class="stat-header participants">
+                                <svg class="stat-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"/>
+                                </svg>
+                                <span>参加者</span>
+                            </div>
+                            <div class="stat-value">${pitch.participants || 0}</div>
+                            <div class="stat-unit">人</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-header tips">
+                                <svg class="stat-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+                                </svg>
+                                <span>ギフト総額</span>
+                            </div>
+                            <div class="stat-value tips">${pitch.totalTips || 0}</div>
+                            <div class="stat-unit">QUcoin</div>
+                        </div>
+                    </div>
+
+                    <div class="button-group">
+                        <button class="btn btn-primary" onclick="editPitch('${pitch._id}')">
+                            <svg class="label-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                            </svg>
+                            <span>編集</span>
+                        </button>
+                        <button class="btn btn-danger" onclick="deletePitch('${pitch._id}')">
+                            <svg class="label-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                            </svg>
+                            <span>削除</span>
+                        </button>
+                    </div>
                 </div>
-            `;
+            </div>
+        `;
+    }
+
+    // ステータス情報を取得
+    function getStatusInfo(status) {
+        switch (status) {
+            case 'live':
+                return { label: 'デモ中', className: 'status-live' };
+            case 'ended':
+                return { label: '終了', className: 'status-ended' };
+            default:
+                return { label: '未開始', className: 'status-upcoming' };
         }
+    }
 
-        // ステータス情報を取得
-        function getStatusInfo(status) {
-            switch (status) {
-                case 'live':
-                    return { label: 'デモ中', className: 'status-live' };
-                case 'ended':
-                    return { label: '終了', className: 'status-ended' };
-                default:
-                    return { label: '未開始', className: 'status-upcoming' };
-            }
-        }
+    // 空状態を表示
+    function showEmptyState() {
+        document.getElementById('pitches-list').innerHTML = '';
+        document.getElementById('empty-state').classList.remove('hidden');
+    }
 
-        // 空状態を表示
-        function showEmptyState() {
-            document.getElementById('pitches-list').innerHTML = '';
-            document.getElementById('empty-state').classList.remove('hidden');
-        }
+    // 作成モーダルを開く
+    function openCreateModal() {
+        isEditMode = false;
+        editingPitch = null;
+        document.getElementById('modal-title').textContent = '新規ピッチ作成';
+        document.getElementById('submit-text').textContent = '作成する';
+        clearForm();
+        document.getElementById('modal-overlay').classList.remove('hidden');
+    }
 
-        // 作成モーダルを開く
-        function openCreateModal() {
-            isEditMode = false;
-            editingPitch = null;
-            document.getElementById('modal-title').textContent = '新規ピッチ作成';
-            document.getElementById('submit-text').textContent = '作成する';
-            clearForm();
-            document.getElementById('modal-overlay').classList.remove('hidden');
-        }
+    // 編集モーダルを開く
+    function editPitch(pitchId) {
+        const pitch = userPitches.find(p => p._id === pitchId);
+        if (!pitch) return;
 
-        // 編集モーダルを開く
-        function editPitch(pitchId) {
-            const pitch = userPitches.find(p => p._id === pitchId);
-            if (!pitch) return;
-
-            isEditMode = true;
-            editingPitch = pitch;
-            document.getElementById('modal-title').textContent = 'ピッチ編集';
-            document.getElementById('submit-text').textContent = '更新する';
-            
-            // フォームにデータを設定
-            document.getElementById('title-input').value = pitch.title || '';
-            document.getElementById('description-input').value = pitch.description || '';
-            
-            if (pitch.coverImage) {
-                showImagePreview(pitch.coverImage);
-            } else {
-                hideImagePreview();
-            }
-            
-            document.getElementById('modal-overlay').classList.remove('hidden');
-        }
-
-        // モーダルを閉じる
-        function closeModal() {
-            document.getElementById('modal-overlay').classList.add('hidden');
-            clearForm();
-            isEditMode = false;
-            editingPitch = null;
-        }
-
-        // フォームをクリア
-        function clearForm() {
-            document.getElementById('title-input').value = '';
-            document.getElementById('description-input').value = '';
+        isEditMode = true;
+        editingPitch = pitch;
+        document.getElementById('modal-title').textContent = 'ピッチ編集';
+        document.getElementById('submit-text').textContent = '更新する';
+        
+        // フォームにデータを設定
+        document.getElementById('title-input').value = pitch.title || '';
+        document.getElementById('description-input').value = pitch.description || '';
+        
+        if (pitch.coverImage) {
+            showImagePreview(pitch.coverImage);
+        } else {
             hideImagePreview();
         }
+        
+        document.getElementById('modal-overlay').classList.remove('hidden');
+    }
 
-        // ピッチ削除
-        async function deletePitch(pitchId) {
-            const pitch = userPitches.find(p => p._id === pitchId);
-            if (!pitch) return;
+    // モーダルを閉じる
+    function closeModal() {
+        document.getElementById('modal-overlay').classList.add('hidden');
+        clearForm();
+        isEditMode = false;
+        editingPitch = null;
+    }
 
-            if (!confirm(`「${pitch.title}」を削除しますか？`)) return;
+    // フォームをクリア
+    function clearForm() {
+        document.getElementById('title-input').value = '';
+        document.getElementById('description-input').value = '';
+        hideImagePreview();
+    }
 
-            try {
-                const token = localStorage.getItem('authToken');
-                const response = await fetch(`/api/pitches/${pitchId}`, {
-                    method: 'DELETE',
-                    headers: {
-                        'x-user-id': token,  // ✅
-                        'Content-Type': 'application/json'
-                    }
-                });
+    // ピッチ削除
+    async function deletePitch(pitchId) {
+        const pitch = userPitches.find(p => p._id === pitchId);
+        if (!pitch) return;
 
-                if (response.ok) {
-                    userPitches = userPitches.filter(p => p._id !== pitchId);
-                    displayPitches();
-                    alert('ピッチを削除しました');
-                } else {
-                    alert('削除に失敗しました');
+        if (!confirm(`「${pitch.title}」を削除しますか？`)) return;
+
+        try {
+            const token = localStorage.getItem('authToken');
+            const response = await fetch(`/api/pitches/${pitchId}`, {
+                method: 'DELETE',
+                headers: {
+                    'x-user-id': token,
+                    'Content-Type': 'application/json'
                 }
-            } catch (error) {
-                console.error('削除エラー:', error);
+            });
+
+            if (response.ok) {
+                userPitches = userPitches.filter(p => p._id !== pitchId);
+                displayPitches();
+                alert('ピッチを削除しました');
+            } else {
                 alert('削除に失敗しました');
             }
+        } catch (error) {
+            console.error('削除エラー:', error);
+            alert('削除に失敗しました');
+        }
+    }
+
+    // ファイル選択をトリガー
+    function triggerFileInput() {
+        document.getElementById('file-input').click();
+    }
+
+    // ドラッグ&ドロップハンドラー
+    function handleDragEnter(event) {
+        event.preventDefault();
+        event.stopPropagation();
+        document.getElementById('upload-area').classList.add('drag-active');
+    }
+
+    function handleDragLeave(event) {
+        event.preventDefault();
+        event.stopPropagation();
+        document.getElementById('upload-area').classList.remove('drag-active');
+    }
+
+    function handleDragOver(event) {
+        event.preventDefault();
+        event.stopPropagation();
+    }
+
+    function handleDrop(event) {
+        event.preventDefault();
+        event.stopPropagation();
+        document.getElementById('upload-area').classList.remove('drag-active');
+        
+        const files = event.dataTransfer.files;
+        if (files.length > 0) {
+            handleFile(files[0]);
+        }
+    }
+
+    // ファイル選択ハンドラー
+    function handleFileSelect(event) {
+        const files = event.target.files;
+        if (files.length > 0) {
+            handleFile(files[0]);
+        }
+    }
+
+    // ファイル処理
+    function handleFile(file) {
+        if (!file.type.startsWith('image/')) {
+            alert('画像ファイルを選択してください');
+            return;
         }
 
-        // ファイル選択をトリガー
-        function triggerFileInput() {
-            document.getElementById('file-input').click();
+        if (file.size > 5 * 1024 * 1024) { // 5MB
+            alert('ファイルサイズが大きすぎます（最大5MB）');
+            return;
         }
 
-        // ドラッグ&ドロップハンドラー
-        function handleDragEnter(event) {
-            event.preventDefault();
-            event.stopPropagation();
-            document.getElementById('upload-area').classList.add('drag-active');
+        const reader = new FileReader();
+        reader.onload = function(event) {
+            showImagePreview(event.target.result);
+        };
+        reader.readAsDataURL(file);
+    }
+
+    // 画像プレビューを表示
+    function showImagePreview(imageSrc) {
+        document.getElementById('upload-content').classList.add('hidden');
+        document.getElementById('image-preview').classList.remove('hidden');
+        document.getElementById('preview-image').src = imageSrc;
+    }
+
+    // 画像プレビューを非表示
+    function hideImagePreview() {
+        document.getElementById('upload-content').classList.remove('hidden');
+        document.getElementById('image-preview').classList.add('hidden');
+        document.getElementById('preview-image').src = '';
+        document.getElementById('file-input').value = '';
+    }
+
+    // 画像を削除
+    function removeImage() {
+        hideImagePreview();
+    }
+
+    // フォーム送信（修正版）
+    document.getElementById('pitch-form').addEventListener('submit', async (event) => {
+        event.preventDefault();
+        
+        const title = document.getElementById('title-input').value.trim();
+        const description = document.getElementById('description-input').value.trim();
+        const coverImage = document.getElementById('preview-image').src || '';
+
+        if (!title || !description) {
+            alert('タイトルと説明を入力してください');
+            return;
         }
 
-        function handleDragLeave(event) {
-            event.preventDefault();
-            event.stopPropagation();
-            document.getElementById('upload-area').classList.remove('drag-active');
-        }
+        const pitchData = {
+            title,
+            description,
+            coverImage,
+            team: currentUser.team,
+            presenterId: currentUser.id,
+            presenterName: currentUser.name
+        };
 
-        function handleDragOver(event) {
-            event.preventDefault();
-            event.stopPropagation();
-        }
+        try {
+            const token = localStorage.getItem('authToken');
+            let response;
 
-        function handleDrop(event) {
-            event.preventDefault();
-            event.stopPropagation();
-            document.getElementById('upload-area').classList.remove('drag-active');
-            
-            const files = event.dataTransfer.files;
-            if (files.length > 0) {
-                handleFile(files[0]);
+            if (isEditMode && editingPitch) {
+                // 更新
+                response = await fetch(`/api/pitches/${editingPitch._id}`, {
+                    method: 'PUT',
+                    headers: {
+                        'x-user-id': token,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(pitchData)
+                });
+            } else {
+                // 作成
+                response = await fetch('/api/pitches', {
+                    method: 'POST',
+                    headers: {
+                        'x-user-id': token,  // ✅ 認証ヘッダーを統一
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(pitchData)
+                });
             }
-        }
 
-        // ファイル選択ハンドラー
-        function handleFileSelect(event) {
-            const files = event.target.files;
-            if (files.length > 0) {
-                handleFile(files[0]);
-            }
-        }
-
-        // ファイル処理
-        function handleFile(file) {
-            if (!file.type.startsWith('image/')) {
-                alert('画像ファイルを選択してください');
-                return;
-            }
-
-            if (file.size > 5 * 1024 * 1024) { // 5MB
-                alert('ファイルサイズが大きすぎます（最大5MB）');
-                return;
-            }
-
-            const reader = new FileReader();
-            reader.onload = function(event) {
-                showImagePreview(event.target.result);
-            };
-            reader.readAsDataURL(file);
-        }
-
-        // 画像プレビューを表示
-        function showImagePreview(imageSrc) {
-            document.getElementById('upload-content').classList.add('hidden');
-            document.getElementById('image-preview').classList.remove('hidden');
-            document.getElementById('preview-image').src = imageSrc;
-        }
-
-        // 画像プレビューを非表示
-        function hideImagePreview() {
-            document.getElementById('upload-content').classList.remove('hidden');
-            document.getElementById('image-preview').classList.add('hidden');
-            document.getElementById('preview-image').src = '';
-            document.getElementById('file-input').value = '';
-        }
-
-        // 画像を削除
-        function removeImage() {
-            hideImagePreview();
-        }
-
-        // フォーム送信
-        document.getElementById('pitch-form').addEventListener('submit', async (event) => {
-            event.preventDefault();
-            
-            const title = document.getElementById('title-input').value.trim();
-            const description = document.getElementById('description-input').value.trim();
-            const coverImage = document.getElementById('preview-image').src || '';
-
-            if (!title || !description) {
-                alert('タイトルと説明を入力してください');
-                return;
-            }
-
-            const pitchData = {
-                title,
-                description,
-                coverImage,
-                team: currentUser.team,
-                presenterId: currentUser.id,
-                presenterName: currentUser.name
-            };
-
-            try {
-                const token = localStorage.getItem('authToken');
-                let response;
-
-                if (isEditMode && editingPitch) {
-                    // 更新
-                    response = await fetch(`/api/pitches/${editingPitch._id}`, {
-                        method: 'PUT',
-                        headers: {
-                            'x-user-id': token,  // ✅
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify(pitchData)
-                    });
-                } else {
-                    // 作成
-                    response = await fetch('/api/pitches', {
-                        method: 'POST',
-                        headers: {
-                            'Authorization': `Bearer ${token}`,
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify(pitchData)
-                    });
-                }
-
-                if (response.ok) {
-                    const result = await response.json();
-                    
-                    if (isEditMode) {
-                        // 既存のピッチを更新
-                        const index = userPitches.findIndex(p => p._id === editingPitch._id);
-                        if (index !== -1) {
-                            userPitches[index] = result;
-                        }
-                        alert('ピッチを更新しました');
-                    } else {
-                        // 新しいピッチを追加
-                        userPitches.push(result);
-                        alert('ピッチを作成しました');
+            if (response.ok) {
+                const result = await response.json();
+                
+                if (isEditMode) {
+                    // 既存のピッチを更新
+                    const index = userPitches.findIndex(p => p._id === editingPitch._id);
+                    if (index !== -1) {
+                        userPitches[index] = result;
                     }
-                    
-                    displayPitches();
-                    closeModal();
+                    alert('ピッチを更新しました');
                 } else {
-                    const error = await response.json();
-                    alert(error.message || '保存に失敗しました');
+                    // 新しいピッチを追加
+                    userPitches.push(result);
+                    alert('ピッチを作成しました');
                 }
-            } catch (error) {
-                console.error('保存エラー:', error);
-                alert('保存に失敗しました');
-            }
-        });
-
-        // モーダル外クリックで閉じる
-        document.getElementById('modal-overlay').addEventListener('click', (event) => {
-            if (event.target === event.currentTarget) {
+                
+                displayPitches();
                 closeModal();
+            } else {
+                const error = await response.json();
+                alert(error.message || '保存に失敗しました');
             }
-        });
+        } catch (error) {
+            console.error('保存エラー:', error);
+            alert('保存に失敗しました');
+        }
+    });
 
-        // ESCキーでモーダルを閉じる
-        document.addEventListener('keydown', (event) => {
-            if (event.key === 'Escape' && !document.getElementById('modal-overlay').classList.contains('hidden')) {
-                closeModal();
-            }
-        });
+    // モーダル外クリックで閉じる
+    document.getElementById('modal-overlay').addEventListener('click', (event) => {
+        if (event.target === event.currentTarget) {
+            closeModal();
+        }
+    });
 
-        // ページ読み込み時の初期化
-        window.addEventListener('load', async () => {
-            if (!checkAuth()) return;
-            
-            await loadUserPitches();
-            
-            document.getElementById('loading').classList.add('hidden');
-            document.getElementById('main-content').classList.remove('hidden');
-        });
+    // ESCキーでモーダルを閉じる
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && !document.getElementById('modal-overlay').classList.contains('hidden')) {
+            closeModal();
+        }
+    });
+
+    // ページ読み込み時の初期化
+    window.addEventListener('load', async () => {
+        if (!checkAuth()) return;
+        
+        await loadUserPitches();
+        
+        document.getElementById('loading').classList.add('hidden');
+        document.getElementById('main-content').classList.remove('hidden');
+    });
     </script>
 </body>
 </html>

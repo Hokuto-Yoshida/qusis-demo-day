@@ -547,12 +547,6 @@
         <div id="main-content" class="hidden">
             <!-- Header -->
             <div class="header">
-                <button class="back-button" onclick="goHome()">
-                    <svg class="back-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
-                    </svg>
-                    <span>ホームに戻る</span>
-                </button>
                 <h1 class="page-title" id="pitch-title">ピッチタイトル</h1>
                 <p class="page-description" id="pitch-description">ピッチの説明</p>
             </div>
@@ -563,6 +557,7 @@
                     <!-- Pitch Info -->
                     <div class="card pitch-info">
                         <div class="cover-image">
+                            <img id="cover" class="cover-img" src="" alt="ピッチカバー" />
                             <div class="cover-placeholder" id="cover-content">
                                 <svg class="cover-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
@@ -575,7 +570,6 @@
                         <div class="pitch-content">
                             <div class="pitch-header">
                                 <span class="team-badge" id="team-badge">チーム名</span>
-                                <span class="pitch-id" id="pitch-id">#ID</span>
                             </div>
                             <div class="total-tips">
                                 <div class="total-tips-content">
@@ -672,9 +666,6 @@
                                     <div class="tip-amount">100 QUcoin</div>
                                 </button>
                             </div>
-                            <div class="balance-display">
-                                残高: <span id="coin-balance">0</span> QUcoin
-                            </div>
                         </div>
                     </div>
 
@@ -704,6 +695,8 @@
         </div>
     </div>
    <div id="toast" class="toast"></div> 
+<script src="https://cdn.jsdelivr.net/npm/js-confetti@0.12.0/dist/js-confetti.browser.js" defer></script>
+
   <script type="module" src="/js/pages/pitch-detail.js" defer></script> 
 </body>
 </html>
