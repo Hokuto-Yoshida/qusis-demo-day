@@ -92,13 +92,7 @@ app.get('/usage', (req, res) => {
 });
 
 // ヘルスチェック用エンドポイント
-app.get('/ping', (req, res) => {
-    res.status(200).json({ 
-        status: 'OK',
-        timestamp: new Date().toISOString(),
-        uptime: process.uptime()
-    });
-});
+app.get('/ping', (req, res) => res.status(200).json({ status: 'OK' }));
 
 // React版への切り替えルート（デバッグ用）
 if (process.env.NODE_ENV === 'production') {
