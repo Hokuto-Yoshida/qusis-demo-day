@@ -4,7 +4,7 @@ import Tip from '../models/Tip.js';
 import Pitch from '../models/Pitch.js';
 import User from '../models/User.js';
 import { authenticate } from '../middleware/auth.js';
-
+import mongoose from 'mongoose';
 const router = Router();
 
 // 投げ銭追加（認証必要）
@@ -97,10 +97,28 @@ router.get('/:pitchId/supporters', async (req, res) => {
   try {
     const { pitchId } = req.params;
     
+    console.log('🔍 サポーターランキング取得開始:', pitchId);
+    
+    // ✅ ObjectId形式に変換
+    const pitchObjectId = new mongoose.Types.ObjectId(pitchId);
+    console.log('🔄 ObjectId変換:', pitchObjectId);
+    
+    // まず該当ピッチの投げ銭があるかチェック
+    const allTips = await Tip.find({ pitch: pitchObjectId }).lean();
+    console.log('📊 該当ピッチの投げ銭データ:', allTips);
+    console.log('📊 投げ銭データ数:', allTips.length);
+    
+    if (allTips.length === 0) {
+      console.log('📭 投げ銭データなし');
+      return res.json([]);
+    }
+    
     // MongoDB Aggregation でユーザー別投げ銭総額を計算
+    console.log('🔄 Aggregation実行開始');
+    
     const supporters = await Tip.aggregate([
-      // 該当ピッチの投げ銭のみフィルタ
-      { $match: { pitch: pitchId } },
+      // ✅ ObjectIdを使ってマッチ
+      { $match: { pitch: pitchObjectId } },
       
       // ユーザー別にグループ化して総額計算
       {
@@ -146,10 +164,11 @@ router.get('/:pitchId/supporters', async (req, res) => {
     ]);
 
     console.log(`📊 ピッチ ${pitchId} のサポーターランキング:`, supporters);
+    console.log(`📊 サポーター数:`, supporters.length);
     
     res.json(supporters);
   } catch (err) {
-    console.error('サポーターランキング取得エラー:', err);
+    console.error('❌ サポーターランキング取得エラー:', err);
     res.status(500).json({ 
       success: false,
       error: 'サポーターランキングの取得に失敗しました' 

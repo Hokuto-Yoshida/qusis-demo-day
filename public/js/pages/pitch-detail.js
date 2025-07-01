@@ -52,56 +52,84 @@ window.addEventListener('DOMContentLoaded', () => {
 
     // ✅ サポーターランキング取得
     async function loadSupporters() {
-    try {
-        const token = localStorage.getItem('authToken');
-        const res = await fetch(`${BASE_URL}/api/tips/${pitchId}/supporters`, {
-        headers: {
-            'Content-Type': 'application/json',
-            'x-user-id': token,
-            Authorization: `Bearer ${token}`
-        }
-        });
-        
-        if (!res.ok) {
-        if (res.status === 404) {
-            // エンドポイントが存在しない場合は空配列
+        try {
+            console.log('🔍 loadSupporters 開始');
+            console.log('pitchId:', pitchId);
+            
+            const token = localStorage.getItem('authToken');
+            console.log('token:', token ? 'あり' : 'なし');
+            
+            // ✅ 認証ヘッダーを統一（x-user-id のみ使用）
+            const url = `${BASE_URL}/api/tips/${pitchId}/supporters`;
+            console.log('📡 リクエストURL:', url);
+            
+            const res = await fetch(url, {
+            headers: {
+                'Content-Type': 'application/json',
+                'x-user-id': token  // ✅ 認証ヘッダーを統一
+            }
+            });
+            
+            console.log('📥 レスポンスステータス:', res.status);
+            
+            if (!res.ok) {
+            const errorText = await res.text();
+            console.error('❌ レスポンスエラー:', res.status, errorText);
+            
+            if (res.status === 404) {
+                console.log('⚠️ エンドポイントが見つからない');
+                supporters = [];
+                displaySupporters();
+                return;
+            }
+            throw new Error('サポーターランキング取得失敗');
+            }
+            
+            const data = await res.json();
+            console.log('📋 取得したサポーターデータ:', data);
+            
+            supporters = data;
+            console.log('✅ supporters配列に設定:', supporters);
+            
+            displaySupporters();
+        } catch (e) {
+            console.error('❌ サポーターランキング取得エラー:', e);
             supporters = [];
             displaySupporters();
+        }
+        }
+
+        // ✅ デバッグ版サポーターランキング表示
+        function displaySupporters() {
+        console.log('🎨 displaySupporters 実行');
+        console.log('supporters配列:', supporters);
+        console.log('supporters.length:', supporters.length);
+        
+        const container = document.getElementById('supporters-list');
+        const emptyState = document.getElementById('empty-ranking');
+        
+        console.log('container要素:', container);
+        console.log('emptyState要素:', emptyState);
+        
+        if (!container || !emptyState) {
+            console.warn('⚠️ サポーターランキング要素が見つかりません');
             return;
         }
-        throw new Error('サポーターランキング取得失敗');
+
+        if (supporters.length === 0) {
+            console.log('📭 サポーターが0人 - 空状態を表示');
+            container.innerHTML = '';
+            emptyState.classList.remove('hidden');
+            return;
         }
-        
-        supporters = await res.json();
-        displaySupporters();
-    } catch (e) {
-        console.error('サポーターランキング取得エラー:', e);
-        supporters = [];
-        displaySupporters();
-    }
-    }
 
-    // ✅ サポーターランキング表示
-    function displaySupporters() {
-    const container = document.getElementById('supporters-list');
-    const emptyState = document.getElementById('empty-ranking');
-    
-    if (!container || !emptyState) {
-        console.warn('サポーターランキング要素が見つかりません');
-        return;
-    }
-
-    if (supporters.length === 0) {
-        container.innerHTML = '';
-        emptyState.classList.remove('hidden');
-        return;
-    }
-
-    emptyState.classList.add('hidden');
-    container.innerHTML = supporters.map((supporter, index) => 
-        createSupporterElement(supporter, index)
-    ).join('');
-    }
+        console.log('👥 サポーターあり - ランキング表示');
+        emptyState.classList.add('hidden');
+        container.innerHTML = supporters.map((supporter, index) => {
+            console.log(`サポーター${index + 1}:`, supporter);
+            return createSupporterElement(supporter, index);
+        }).join('');
+        }
 
     // ✅ サポーター要素を作成
     function createSupporterElement(supporter, index) {
@@ -119,10 +147,6 @@ window.addEventListener('DOMContentLoaded', () => {
             <div class="supporter-info">
             <span class="supporter-name">${supporter.userName}</span>
             ${teamBadge}
-            <div class="supporter-details">
-                <span class="tip-count">${supporter.tipCount}回</span>
-                <span class="last-tip">最終: ${new Date(supporter.lastTipDate).toLocaleDateString('ja-JP')}</span>
-            </div>
             </div>
         </div>
         <div class="supporter-right">
@@ -316,18 +340,28 @@ window.addEventListener('DOMContentLoaded', () => {
   // 投げ銭送信 + スーパーチャット + クラッカー
   async function sendTip(amount, label) {
     try {
+        console.log('💰 投げ銭送信開始:', { amount, label, pitchId });
+        
         const token = localStorage.getItem('authToken');
         const res = await fetch(`${BASE_URL}/api/tips`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-            'x-user-id': token,
-            Authorization: `Bearer ${token}`
+            'x-user-id': token  // ✅ 認証ヘッダーを統一
         },
         body: JSON.stringify({ pitch: pitchId, amount, message: '' })
         });
-        if (!res.ok) throw new Error('送信失敗');
+        
+        console.log('投げ銭レスポンス:', res.status);
+        
+        if (!res.ok) {
+        const errorText = await res.text();
+        console.error('投げ銭エラー:', errorText);
+        throw new Error('送信失敗');
+        }
+        
         const { tip, newBalance } = await res.json();
+        console.log('投げ銭成功:', { tip, newBalance });
         
         // ✅ ローカルストレージのユーザー情報を更新
         const user = JSON.parse(localStorage.getItem('user'));
@@ -336,9 +370,14 @@ window.addEventListener('DOMContentLoaded', () => {
         
         // ✅ UI 更新
         tipsEl.textContent = Number(tipsEl.textContent) + tip.amount;
-        if (coinBalanceEl) coinBalanceEl.textContent = newBalance;
         
-        // ✅ スーパーチャットを送信（コイン獲得なしバージョン）
+        // ✅ コイン残高表示（要素が存在する場合のみ）
+        const coinBalanceEl = document.getElementById('coin-balance');
+        if (coinBalanceEl) {
+        coinBalanceEl.textContent = newBalance;
+        }
+        
+        // ✅ スーパーチャットを送信
         await sendSuperChat(`【${label}】投げ銭 ${amount} QUcoin`);
         
         // トーストにラベル表示
@@ -352,8 +391,8 @@ window.addEventListener('DOMContentLoaded', () => {
         if (headerBal) headerBal.textContent = `${newBalance} QUcoin`;
 
         // ✅ サポーターランキングを更新
+        console.log('🔄 サポーターランキング更新開始');
         await loadSupporters();
-
         
     } catch (e) {
         showToast('送信エラー');
@@ -361,7 +400,7 @@ window.addEventListener('DOMContentLoaded', () => {
     }
     }
 
-    // ✅ 新しい関数: コイン獲得なしでメッセージ送信
+    // ✅ 修正版スーパーチャット送信
     async function sendSuperChat(content) {
     try {
         const token = localStorage.getItem('authToken');
@@ -369,20 +408,18 @@ window.addEventListener('DOMContentLoaded', () => {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-            'x-user-id': token,
-            Authorization: `Bearer ${token}`
+            'x-user-id': token  // ✅ 認証ヘッダーを統一
         },
         body: JSON.stringify({ 
             pitch: pitchId, 
             content,
-            isSuperchat: true // ✅ スーパーチャットフラグ（コイン獲得なし）
+            isSuperchat: true
         })
         });
         
         if (!res.ok) throw new Error('スーパーチャット送信失敗');
         const { message: newMsg } = await res.json();
         
-        // チャット表示に追加（残高更新なし）
         chatMessages.push(newMsg);
         displayChatMessages();
         

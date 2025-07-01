@@ -52,7 +52,7 @@ router.get('/transactions', authenticate, async (req, res) => {
     transactions.push({
       id: 'signup-bonus',
       type: 'earned',
-      amount: 500,
+      amount: 600,
       description: '初回登録ボーナス',
       timestamp: req.user.createdAt
     });
@@ -84,7 +84,7 @@ router.get('/balance', authenticate, async (req, res) => {
       { $group: { _id: null, total: { $sum: '$amount' } } }
     ]);
     
-    const totalEarned = (totalContributions[0]?.total || 0) + 500; // 初回ボーナス含む
+    const totalEarned = (totalContributions[0]?.total || 0) + 600; // 初回ボーナス含む
     const totalSpent = totalTips[0]?.total || 0;
     
     res.json({

@@ -1,6 +1,6 @@
-/* public/js/pages/home.js */
+/* public/js/pages/home.js - 修正版 */
 import { BASE_URL } from '../config.js';
-import '../header.js';                 // ← 先にヘッダーを差し込む
+import '../header.js';
 
 // 1. 認証チェック ─────────────────────────
 if (!localStorage.getItem('authToken')) {
@@ -35,12 +35,12 @@ const empty     = document.getElementById('empty-state');
   }
 })();
 
-// 4. カード生成ヘルパー ───────────────────
+// 4. カード生成ヘルパー（修正版）
 function toCard (p) {
   const statusMap = {
-    live    : { label:'デモ中',    badge:'status-live',    btn:'btn-live',    action:'デモを見る' },
-    ended   : { label:'終了',      badge:'status-ended',   btn:'btn-disabled',action:'終了しました' },
-    upcoming: { label:'開始前',    badge:'status-upcoming',btn:'btn-upcoming',action:'応援する' }
+    live    : { label:'デモ中',    badge:'status-live',    btn:'btn-live',     action:'デモを見る' },
+    ended   : { label:'終了',      badge:'status-ended',   btn:'btn-upcoming', action:'応援する' }, // ✅ 修正: 終了後も応援可能
+    upcoming: { label:'開始前',    badge:'status-upcoming',btn:'btn-upcoming', action:'応援する' }
   };
   const S = statusMap[p.status] || statusMap.upcoming;
 
@@ -61,7 +61,7 @@ function toCard (p) {
       <div class="card-content">
         <div class="card-header">
           <span class="team-badge">${p.team}</span>
-          <span class="schedule">${p.schedule}</span>
+          <span class="schedule">${p.schedule || ''}</span>
         </div>
 
         <h3 class="pitch-title">${p.title}</h3>
@@ -69,15 +69,14 @@ function toCard (p) {
 
         <div class="stats">
           <div class="stats-left">
-            <span class="stat-item">${p.participants}人</span>
-            <span class="stat-item">${p.totalTips} QU</span>
+            <span class="stat-item">${p.participants || 0}人</span>
+            <span class="stat-item">${p.totalTips || 0} QU</span>
           </div>
           <span class="pitch-id">#${p._id}</span>
         </div>
 
-        ${p.status==='ended'
-          ? `<button class="action-btn ${S.btn}" disabled>${S.action}</button>`
-          : `<a href="/pitch-detail.html?id=${p._id}" class="action-btn ${S.btn}">${S.action}</a>`}
+        <!-- ✅ 修正: すべてのステータスでピッチ詳細に飛べるように -->
+        <a href="/pitch-detail.html?id=${p._id}" class="action-btn ${S.btn}">${S.action}</a>
       </div>
     </div>`;
 }

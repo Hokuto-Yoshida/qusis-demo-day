@@ -32,7 +32,7 @@ router.post('/register', async (req, res) => {
       password: hashedPassword,
       role: role || 'viewer',
       team: team || null,
-      coinBalance: 500 // 新規登録ボーナス
+      coinBalance: 600 // 新規登録ボーナス
     });
     
     await user.save();
