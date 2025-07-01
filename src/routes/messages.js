@@ -1,4 +1,4 @@
-// src/routes/messages.js - 修正版
+// src/routes/messages.js - 修正版（初回投稿のみコイン獲得）
 import { Router } from 'express';
 import Message from '../models/Message.js';
 import Pitch from '../models/Pitch.js';
@@ -10,7 +10,7 @@ const router = Router();
 // チャット投稿（認証必要）
 router.post('/', authenticate, async (req, res) => {
   try {
-    const { pitch: pitchId, content, isSuperchat } = req.body; // ✅ isSuperchat フラグを追加
+    const { pitch: pitchId, content, isSuperchat } = req.body;
     const userId = req.user._id;
     
     console.log('💬 チャットメッセージ:', { pitchId, userId, content, isSuperchat });
@@ -32,6 +32,15 @@ router.post('/', authenticate, async (req, res) => {
       });
     }
 
+    // ✅ 既存のメッセージをチェック（初回投稿判定）
+    const existingMessage = await Message.findOne({ 
+      pitch: pitchId, 
+      user: userId 
+    });
+    const isFirstPost = !existingMessage;
+    
+    console.log('🔍 初回投稿チェック:', { userId, pitchId, isFirstPost });
+
     // メッセージを作成
     const message = await Message.create({ 
       pitch: pitchId, 
@@ -39,22 +48,27 @@ router.post('/', authenticate, async (req, res) => {
       content: content.trim() 
     });
 
-    // ✅ スーパーチャット（投げ銭メッセージ）の場合は、コイン獲得と参加者数増加をスキップ
+    // ✅ コイン獲得とピッチ参加者数の処理
     let coinReward = 0;
     let newBalance = req.user.coinBalance;
     
     if (!isSuperchat) {
-      // 通常のチャットメッセージの場合のみ報酬を付与
+      // 通常のチャットメッセージの場合
       
-      // ピッチの参加者数をインクリメント（重複参加者の考慮なし）
-      await Pitch.findByIdAndUpdate(pitchId, { $inc: { participants: 1 } });
-
-      // チャット参加報酬（20コイン）
-      coinReward = 20;
-      await User.findByIdAndUpdate(userId, { $inc: { coinBalance: coinReward } });
-      newBalance = req.user.coinBalance + coinReward;
-      
-      console.log('✅ 通常チャット: コイン獲得', coinReward);
+      if (isFirstPost) {
+        // ✅ 初回投稿の場合のみコイン獲得
+        coinReward = 20;
+        await User.findByIdAndUpdate(userId, { $inc: { coinBalance: coinReward } });
+        newBalance = req.user.coinBalance + coinReward;
+        
+        // ピッチの参加者数をインクリメント（初回投稿時のみ）
+        await Pitch.findByIdAndUpdate(pitchId, { $inc: { participants: 1 } });
+        
+        console.log('✅ 初回チャット投稿: コイン獲得', coinReward);
+      } else {
+        // ✅ 2回目以降の投稿はコイン獲得なし
+        console.log('✅ 2回目以降のチャット投稿: コイン獲得なし');
+      }
     } else {
       console.log('✅ スーパーチャット: コイン獲得なし');
     }
@@ -70,7 +84,8 @@ router.post('/', authenticate, async (req, res) => {
       success: true,
       message: populatedMessage,
       coinReward: coinReward,
-      newBalance: newBalance
+      newBalance: newBalance,
+      isFirstPost: isFirstPost // ✅ フロントエンド用の情報
     });
   } catch (err) {
     console.error('❌ チャットメッセージエラー:', err);

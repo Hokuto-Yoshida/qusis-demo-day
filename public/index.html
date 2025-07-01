@@ -239,7 +239,7 @@
                             </div>
                             <div class="text-left">
                                 <h3 class="text-lg font-semibold text-white">${escapeHtml(pitch.title || 'タイトル未設定')}</h3>
-                                <p class="text-gray-400">${escapeHtml(pitch.description || '')}</p>
+
                                 <p class="text-sm text-teal-400">チーム: ${escapeHtml(pitch.team || '未設定')}</p>
                             </div>
                         </div>
@@ -247,7 +247,7 @@
                             <div class="px-3 py-1 rounded-full text-xs font-medium ${getStatusStyle(pitch.status)}">
                                 ${getStatusText(pitch.status)}
                             </div>
-                            <p class="text-sm text-gray-400 mt-1">${escapeHtml(pitch.schedule || '時間未定')}</p>
+                         
                         </div>
                     </div>
                 `).join('');
