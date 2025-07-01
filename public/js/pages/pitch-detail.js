@@ -2,6 +2,9 @@
 import { BASE_URL } from '../config.js';
 import '../header.js';
 
+window.debugSocket = null;
+window.debugPitchId = null;
+
 window.addEventListener('DOMContentLoaded', () => {
   // 認証チェック
   if (!localStorage.getItem('authToken')) {
@@ -50,35 +53,64 @@ window.addEventListener('DOMContentLoaded', () => {
   // Socket.io初期化
   initializeSocket();
 
+    window.debugPitchId = pitchId;
+
   // ✅ Socket.io初期化
   function initializeSocket() {
     try {
+      console.log('🔌 Socket.io初期化開始');
+      
       // Socket.ioが利用可能な場合のみ接続
       if (typeof io !== 'undefined') {
+        console.log('✅ Socket.io利用可能');
+        
         socket = io();
         
-        // ユーザー情報を取得
-        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        // デバッグ用グローバル変数に保存
+        window.debugSocket = socket;
         
-        // ピッチルームに参加
-        socket.emit('join-pitch', {
-          pitchId: pitchId,
-          userId: user.id || 'anonymous'
+        console.log('🔗 Socket.io接続開始:', socket);
+        
+        // 接続成功イベント
+        socket.on('connect', () => {
+          console.log('✅ Socket.io接続成功:', socket.id);
+          
+          // ユーザー情報を取得
+          const user = JSON.parse(localStorage.getItem('user') || '{}');
+          console.log('👤 ユーザー情報:', user);
+          
+          // ピッチルームに参加
+          const joinData = {
+            pitchId: pitchId,
+            userId: user.id || 'anonymous'
+          };
+          console.log('🎯 ピッチルーム参加:', joinData);
+          
+          socket.emit('join-pitch', joinData);
+        });
+        
+        // 接続エラーイベント
+        socket.on('connect_error', (error) => {
+          console.error('❌ Socket.io接続エラー:', error);
         });
         
         // 観覧者数の更新を受信
         socket.on('viewer-count-updated', (data) => {
+          console.log('📊 観覧者数更新受信:', data);
           if (data.pitchId === pitchId) {
             updateViewerCount(data.count);
           }
         });
         
-        console.log('🔌 Socket.io接続完了');
+        console.log('🔌 Socket.ioイベントリスナー設定完了');
+      } else {
+        console.error('❌ Socket.ioが利用できません');
       }
     } catch (error) {
-      console.log('Socket.io接続をスキップ:', error);
+      console.error('❌ Socket.io初期化エラー:', error);
     }
   }
+
 
   // ✅ 観覧者数を更新する関数
   function updateViewerCount(count) {

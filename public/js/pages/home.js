@@ -69,7 +69,6 @@ function toCard (p) {
 
         <div class="stats">
           <div class="stats-left">
-            <span class="stat-item">${p.participants || 0}人</span>
             <span class="stat-item">${p.totalTips || 0} QU</span>
           </div>
           <span class="pitch-id">#${p._id}</span>
