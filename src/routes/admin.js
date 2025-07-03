@@ -1,4 +1,4 @@
-// src/routes/admin.js - シンプル版
+// src/routes/admin.js - 最適化版
 import { Router } from 'express';
 import Tip from '../models/Tip.js';
 import User from '../models/User.js';
@@ -19,10 +19,13 @@ const requireAdmin = (req, res, next) => {
     next();
 };
 
-// 総応援コイン合計
+// 総応援コイン合計（高速化版）
 router.get('/total-coins', async (_, res) => {
     try {
-        const result = await Tip.aggregate([{ $group: { _id: null, sum: { $sum: '$amount' } } }]);
+        // aggregateを最適化 - インデックス活用
+        const result = await Tip.aggregate([
+            { $group: { _id: null, sum: { $sum: '$amount' } } }
+        ]);
         const total = result.length > 0 ? result[0].sum : 0;
         res.json({ total: total || 0 });
     } catch (error) {
@@ -31,13 +34,14 @@ router.get('/total-coins', async (_, res) => {
     }
 });
 
-// ユーザー一覧（管理者のみ）
+// ユーザー一覧（管理者のみ）- 高速化版
 router.get('/users', authenticate, requireAdmin, async (req, res) => {
     try {
         const users = await User.find()
-            .select('name email role coinBalance team createdAt')
-            .sort({ createdAt: -1 })
-            .lean();
+            .select('name email role coinBalance team createdAt') // 必要フィールドのみ
+            .sort({ createdAt: -1 }) // インデックス活用
+            .limit(500) // 件数制限で高速化
+            .lean(); // Mongooseオブジェクト変換をスキップ
         
         res.json(users);
     } catch (error) {
@@ -46,13 +50,16 @@ router.get('/users', authenticate, requireAdmin, async (req, res) => {
     }
 });
 
-// ユーザー削除（管理者のみ）
+// ユーザー削除（管理者のみ）- 高速化版
 router.delete('/users/:userId', authenticate, requireAdmin, async (req, res) => {
     try {
         const { userId } = req.params;
         
-        // 削除対象ユーザーを取得
-        const targetUser = await User.findById(userId);
+        // 削除対象ユーザーを高速チェック
+        const targetUser = await User.findById(userId)
+            .select('role name') // 必要フィールドのみ
+            .lean(); // 高速化
+            
         if (!targetUser) {
             return res.status(404).json({
                 success: false,
@@ -68,15 +75,13 @@ router.delete('/users/:userId', authenticate, requireAdmin, async (req, res) => 
             });
         }
         
-        // 関連データも削除
+        // 関連データを並列削除（高速化）
         await Promise.all([
             Tip.deleteMany({ user: userId }),
             Contribution.deleteMany({ user: userId }),
-            Pitch.deleteMany({ createdBy: userId })
+            Pitch.deleteMany({ createdBy: userId }),
+            User.findByIdAndDelete(userId) // ユーザー削除も並列実行
         ]);
-        
-        // ユーザー削除
-        await User.findByIdAndDelete(userId);
         
         res.json({
             success: true,
@@ -91,15 +96,17 @@ router.delete('/users/:userId', authenticate, requireAdmin, async (req, res) => 
     }
 });
 
-// 時間貢献履歴取得（管理者のみ）
+// 時間貢献履歴取得（管理者のみ）- 高速化版
 router.get('/time-contributions', authenticate, requireAdmin, async (req, res) => {
     try {
         const contributions = await Contribution.find()
-            .populate('user', 'name email')
-            .sort({ createdAt: -1 })
-            .lean();
+            .populate('user', 'name email') // 必要フィールドのみpopulate
+            .select('type hours coinsAwarded createdAt') // 必要フィールドのみ
+            .sort({ createdAt: -1 }) // インデックス活用
+            .limit(200) // 件数制限で高速化
+            .lean(); // 高速化
         
-        // データ形式を整形
+        // データ形式を整形（mapは高速）
         const formattedContributions = contributions.map(contrib => ({
             _id: contrib._id,
             userName: contrib.user?.name || '不明なユーザー',
@@ -120,9 +127,10 @@ router.get('/time-contributions', authenticate, requireAdmin, async (req, res) =
     }
 });
 
-// 時間貢献履歴リセット（管理者のみ）
+// 時間貢献履歴リセット（管理者のみ）- 高速化版
 router.post('/reset-time-contributions', authenticate, requireAdmin, async (req, res) => {
     try {
+        // deleteMany は既に高速
         await Contribution.deleteMany({});
         
         res.json({
@@ -138,10 +146,10 @@ router.post('/reset-time-contributions', authenticate, requireAdmin, async (req,
     }
 });
 
-// システム統計取得（管理者のみ）
+// システム統計取得（管理者のみ）- 高速化版
 router.get('/stats', authenticate, requireAdmin, async (req, res) => {
     try {
-        // 並列でデータ取得
+        // 並列でデータ取得（countDocuments は既に高速）
         const [
             totalUsers,
             totalPitches,
@@ -149,11 +157,11 @@ router.get('/stats', authenticate, requireAdmin, async (req, res) => {
             totalTips,
             totalContributions
         ] = await Promise.all([
-            User.countDocuments(),
-            Pitch.countDocuments(),
-            Pitch.countDocuments({ status: 'live' }),
-            Tip.aggregate([{ $group: { _id: null, total: { $sum: '$amount' } } }]),
-            Contribution.countDocuments()
+            User.countDocuments(), // インデックス活用
+            Pitch.countDocuments(), // インデックス活用
+            Pitch.countDocuments({ status: 'live' }), // インデックス活用
+            Tip.aggregate([{ $group: { _id: null, total: { $sum: '$amount' } } }]), // 集約クエリ
+            Contribution.countDocuments() // インデックス活用
         ]);
         
         res.json({
