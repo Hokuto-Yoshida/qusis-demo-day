@@ -1,21 +1,24 @@
-// src/routes/messages.js - 修正版（初回投稿のみコイン獲得）
+// src/routes/messages.js - 最適化・高速化版
 import { Router } from 'express';
 import Message from '../models/Message.js';
 import Pitch from '../models/Pitch.js';
 import User from '../models/User.js';
 import { authenticate } from '../middleware/auth.js';
+import mongoose from 'mongoose';
 
 const router = Router();
 
-// チャット投稿（認証必要）
+// チャット投稿（認証必要）- 最適化版
 router.post('/', authenticate, async (req, res) => {
+  const session = await mongoose.startSession();
+  
   try {
     const { pitch: pitchId, content, isSuperchat } = req.body;
     const userId = req.user._id;
     
     console.log('💬 チャットメッセージ:', { pitchId, userId, content, isSuperchat });
     
-    // バリデーション
+    // ✅ バリデーション強化
     if (!pitchId || !content || content.trim().length === 0) {
       return res.status(400).json({ 
         success: false,
@@ -23,90 +26,244 @@ router.post('/', authenticate, async (req, res) => {
       });
     }
 
-    // ピッチが存在するかチェック
-    const pitch = await Pitch.findById(pitchId);
+    // 内容長チェック
+    const trimmedContent = content.trim();
+    if (trimmedContent.length > 500) {
+      return res.status(400).json({ 
+        success: false,
+        error: 'メッセージは500文字以内で入力してください' 
+      });
+    }
+
+    // ✅ ObjectId検証
+    if (!mongoose.Types.ObjectId.isValid(pitchId)) {
+      return res.status(400).json({ 
+        success: false,
+        error: '無効なピッチIDです' 
+      });
+    }
+
+    // ✅ トランザクション開始
+    session.startTransaction();
+
+    // ✅ 並列でピッチ存在確認と初回投稿チェック（高速化）
+    const [pitch, existingMessage] = await Promise.all([
+      Pitch.findById(pitchId).select('_id participants').session(session),
+      Message.findOne({ pitch: pitchId, user: userId }).select('_id').session(session).lean()
+    ]);
+
+    // ピッチ存在チェック
     if (!pitch) {
+      await session.abortTransaction();
       return res.status(404).json({ 
         success: false,
         error: 'ピッチが見つかりません' 
       });
     }
 
-    // ✅ 既存のメッセージをチェック（初回投稿判定）
-    const existingMessage = await Message.findOne({ 
-      pitch: pitchId, 
-      user: userId 
-    });
     const isFirstPost = !existingMessage;
-    
     console.log('🔍 初回投稿チェック:', { userId, pitchId, isFirstPost });
 
-    // メッセージを作成
-    const message = await Message.create({ 
+    // ✅ メッセージ作成
+    const messageData = { 
       pitch: pitchId, 
       user: userId, 
-      content: content.trim() 
-    });
+      content: trimmedContent 
+    };
+    
+    const [message] = await Message.create([messageData], { session });
 
     // ✅ コイン獲得とピッチ参加者数の処理
     let coinReward = 0;
     let newBalance = req.user.coinBalance;
+    let updatedUser = null;
     
-    if (!isSuperchat) {
-      // 通常のチャットメッセージの場合
+    if (!isSuperchat && isFirstPost) {
+      // ✅ 初回投稿の場合のみコイン獲得（アトミック操作）
+      coinReward = 20;
       
-      if (isFirstPost) {
-        // ✅ 初回投稿の場合のみコイン獲得
-        coinReward = 20;
-        await User.findByIdAndUpdate(userId, { $inc: { coinBalance: coinReward } });
-        newBalance = req.user.coinBalance + coinReward;
-        
-        // ピッチの参加者数をインクリメント（初回投稿時のみ）
-        await Pitch.findByIdAndUpdate(pitchId, { $inc: { participants: 1 } });
-        
-        console.log('✅ 初回チャット投稿: コイン獲得', coinReward);
-      } else {
-        // ✅ 2回目以降の投稿はコイン獲得なし
-        console.log('✅ 2回目以降のチャット投稿: コイン獲得なし');
-      }
+      // 並列でユーザー残高更新と参加者数更新
+      const [userUpdate, pitchUpdate] = await Promise.all([
+        User.findByIdAndUpdate(
+          userId, 
+          { $inc: { coinBalance: coinReward } },
+          { new: true, session, select: 'coinBalance' }
+        ),
+        Pitch.findByIdAndUpdate(
+          pitchId, 
+          { $inc: { participants: 1 } },
+          { session }
+        )
+      ]);
+      
+      updatedUser = userUpdate;
+      newBalance = userUpdate.coinBalance;
+      
+      console.log('✅ 初回チャット投稿: コイン獲得', coinReward);
     } else {
-      console.log('✅ スーパーチャット: コイン獲得なし');
+      console.log('✅ 2回目以降またはスーパーチャット: コイン獲得なし');
     }
 
-    console.log('✅ チャットメッセージ作成成功:', message);
+    // ✅ トランザクションコミット
+    await session.commitTransaction();
+
+    console.log('✅ チャットメッセージ作成成功:', message._id);
     
-    // メッセージとユーザー情報をpopulateして返す
+    // ✅ 効率的なpopulate（必要最小限のクエリ）
     const populatedMessage = await Message.findById(message._id)
       .populate('user', 'name team')
+      .select('content createdAt user')
       .lean();
     
+    // ✅ レスポンス最適化
     res.status(201).json({
       success: true,
       message: populatedMessage,
       coinReward: coinReward,
       newBalance: newBalance,
-      isFirstPost: isFirstPost // ✅ フロントエンド用の情報
+      isFirstPost: isFirstPost
     });
+
   } catch (err) {
+    // ✅ エラー時は必ずロールバック
+    if (session.inTransaction()) {
+      await session.abortTransaction();
+    }
+    
     console.error('❌ チャットメッセージエラー:', err);
-    res.status(400).json({ 
+    
+    // エラータイプに応じたレスポンス
+    if (err.name === 'ValidationError') {
+      return res.status(400).json({ 
+        success: false,
+        error: 'メッセージの形式が正しくありません' 
+      });
+    }
+    
+    if (err.code === 11000) { // 重複エラー
+      return res.status(409).json({ 
+        success: false,
+        error: '同じメッセージが既に投稿されています' 
+      });
+    }
+    
+    if (err.name === 'MongoNetworkError') {
+      return res.status(503).json({ 
+        success: false,
+        error: 'データベース接続エラーです。しばらく待ってから再試行してください' 
+      });
+    }
+    
+    res.status(500).json({ 
       success: false,
-      error: err.message 
+      error: 'サーバー内部エラーが発生しました' 
     });
+  } finally {
+    // ✅ セッション必須クリーンアップ
+    await session.endSession();
   }
 });
 
-// 特定ピッチのチャット履歴取得（認証不要）
+// 特定ピッチのチャット履歴取得（認証不要）- 高速化版
 router.get('/:pitchId', async (req, res) => {
   try {
-    const messages = await Message.find({ pitch: req.params.pitchId })
-      .sort({ createdAt: 1 })
-      .populate('user', 'name team')
-      .lean();
+    const { pitchId } = req.params;
+    
+    // ✅ ObjectId検証
+    if (!mongoose.Types.ObjectId.isValid(pitchId)) {
+      return res.status(400).json({ error: '無効なピッチIDです' });
+    }
+
+    // ✅ 最適化されたクエリ
+    const messages = await Message.find({ pitch: pitchId })
+      .select('content createdAt user') // 必要フィールドのみ
+      .sort({ createdAt: 1 }) // インデックス活用
+      .limit(200) // 件数制限（パフォーマンス向上）
+      .populate('user', 'name team') // ユーザー情報は名前とチームのみ
+      .lean(); // 高速化
+
     res.json(messages);
   } catch (err) {
     console.error('チャット履歴取得エラー:', err);
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'データ取得に失敗しました' });
+  }
+});
+
+// ピッチの最新メッセージ取得（認証不要）- 新規追加
+router.get('/:pitchId/recent', async (req, res) => {
+  try {
+    const { pitchId } = req.params;
+    const limit = parseInt(req.query.limit) || 10; // デフォルト10件
+    
+    if (!mongoose.Types.ObjectId.isValid(pitchId)) {
+      return res.status(400).json({ error: '無効なピッチIDです' });
+    }
+
+    const messages = await Message.find({ pitch: pitchId })
+      .select('content createdAt user')
+      .sort({ createdAt: -1 }) // 新着順
+      .limit(Math.min(limit, 50)) // 最大50件まで
+      .populate('user', 'name team')
+      .lean();
+
+    // 古い順に並び替えて返す
+    res.json(messages.reverse());
+  } catch (err) {
+    console.error('最新メッセージ取得エラー:', err);
+    res.status(500).json({ error: 'データ取得に失敗しました' });
+  }
+});
+
+// ユーザーのメッセージ履歴取得（認証必要）- 新規追加
+router.get('/user/history', authenticate, async (req, res) => {
+  try {
+    const messages = await Message.find({ user: req.user._id })
+      .select('content createdAt pitch')
+      .sort({ createdAt: -1 })
+      .limit(100)
+      .populate('pitch', 'title team')
+      .lean();
+
+    res.json(messages);
+  } catch (err) {
+    console.error('ユーザーメッセージ履歴取得エラー:', err);
+    res.status(500).json({ error: 'データ取得に失敗しました' });
+  }
+});
+
+// ピッチのメッセージ統計取得（認証不要）- 新規追加
+router.get('/:pitchId/stats', async (req, res) => {
+  try {
+    const { pitchId } = req.params;
+    
+    if (!mongoose.Types.ObjectId.isValid(pitchId)) {
+      return res.status(400).json({ error: '無効なピッチIDです' });
+    }
+
+    const stats = await Message.aggregate([
+      { $match: { pitch: new mongoose.Types.ObjectId(pitchId) } },
+      {
+        $group: {
+          _id: null,
+          totalMessages: { $sum: 1 },
+          uniqueUsers: { $addToSet: '$user' },
+          latestMessage: { $max: '$createdAt' }
+        }
+      },
+      {
+        $project: {
+          _id: 0,
+          totalMessages: 1,
+          uniqueUsers: { $size: '$uniqueUsers' },
+          latestMessage: 1
+        }
+      }
+    ]);
+
+    res.json(stats[0] || { totalMessages: 0, uniqueUsers: 0, latestMessage: null });
+  } catch (err) {
+    console.error('メッセージ統計取得エラー:', err);
+    res.status(500).json({ error: 'データ取得に失敗しました' });
   }
 });
 

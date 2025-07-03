@@ -416,36 +416,97 @@ window.addEventListener('DOMContentLoaded', () => {
     try {
       console.log('💰 投げ銭送信開始:', { amount, label, pitchId });
       
+      // ユーザー残高チェック
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      if (!user.coinBalance || user.coinBalance < amount) {
+        showToast('コインが不足しています', 'error');
+        return;
+      }
+      
+      // 自チームチェック
+      const currentPitch = { team: document.getElementById('team-badge')?.textContent };
+      if (currentPitch.team === user.team) {
+        showToast('自分のチームには投げ銭できません', 'error');
+        return;
+      }
+
+      // ✅ ボタンを無効化してローディング表示
+      const tipButtons = document.querySelectorAll('.tip-button');
+      const targetButton = Array.from(tipButtons).find(btn => Number(btn.dataset.amount) === amount);
+      
+      // 全ボタンを無効化
+      tipButtons.forEach(btn => {
+        btn.disabled = true;
+        btn.style.opacity = '0.6';
+      });
+      
+      // 対象ボタンにローディング表示
+      if (targetButton) {
+        const originalHTML = targetButton.innerHTML;
+        targetButton.innerHTML = `
+          <div class="tip-label">送信中...</div>
+          <div class="tip-amount">${amount} QUcoin</div>
+        `;
+        
+        // 元の状態を復元する関数
+        targetButton.restoreOriginal = () => {
+          targetButton.innerHTML = originalHTML;
+        };
+      }
+      
       const token = localStorage.getItem('authToken');
+      
+      // ✅ タイムアウト付きリクエスト
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10秒タイムアウト
+      
       const res = await fetch(`${BASE_URL}/api/tips`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-user-id': token  // ✅ 認証ヘッダーを統一
+          'x-user-id': token
         },
-        body: JSON.stringify({ pitch: pitchId, amount, message: '' })
+        body: JSON.stringify({ 
+          pitch: pitchId, 
+          amount, 
+          message: '' 
+        }),
+        signal: controller.signal
       });
       
+      clearTimeout(timeoutId);
       console.log('投げ銭レスポンス:', res.status);
       
       if (!res.ok) {
         const errorText = await res.text();
         console.error('投げ銭エラー:', errorText);
-        throw new Error('送信失敗');
+        
+        // エラーメッセージを詳細化
+        let errorMessage = '送信に失敗しました';
+        if (res.status === 400) {
+          errorMessage = 'コインが不足しているか、無効なリクエストです';
+        } else if (res.status === 403) {
+          errorMessage = '投げ銭の権限がありません';
+        } else if (res.status === 404) {
+          errorMessage = 'ピッチが見つかりません';
+        } else if (res.status >= 500) {
+          errorMessage = 'サーバーエラーが発生しました';
+        }
+        
+        throw new Error(errorMessage);
       }
       
       const { tip, newBalance } = await res.json();
       console.log('投げ銭成功:', { tip, newBalance });
       
       // ✅ ローカルストレージのユーザー情報を更新
-      const user = JSON.parse(localStorage.getItem('user'));
       user.coinBalance = newBalance;
       localStorage.setItem('user', JSON.stringify(user));
       
       // ✅ UI 更新
       tipsEl.textContent = Number(tipsEl.textContent) + tip.amount;
       
-      // ✅ コイン残高表示（要素が存在する場合のみ）
+      // ✅ コイン残高表示
       const coinBalanceEl = document.getElementById('coin-balance');
       if (coinBalanceEl) {
         coinBalanceEl.textContent = newBalance;
@@ -454,23 +515,52 @@ window.addEventListener('DOMContentLoaded', () => {
       // ✅ スーパーチャットを送信
       await sendSuperChat(`【${label}】投げ銭 ${amount} QUcoin`);
       
-      // トーストにラベル表示
-      showToast(label);
+      // ✅ 成功フィードバック
+      showToast(`${label} ${amount} QUcoin送信完了！`, 'success');
       
       // クラッカー演出
-      jsConfetti?.addConfetti({ emojis: ['🎉','✨','🥳'], confettiNumber: 80 });
+      jsConfetti?.addConfetti({ 
+        emojis: ['🎉','✨','🥳','💰','🎊'], 
+        confettiNumber: 100,
+        confettiRadius: 6,
+        confettiColors: ['#14b8a6', '#0d9488', '#10b981', '#059669']
+      });
       
       // ヘッダー残高更新
-      const headerBal = document.getElementById('header-balance');
-      if (headerBal) headerBal.textContent = `${newBalance} QUcoin`;
+      const headerBal = document.getElementById('header-coin-balance');
+      if (headerBal) {
+        headerBal.textContent = `${newBalance} QUcoin`;
+      }
 
       // ✅ サポーターランキングを更新
       console.log('🔄 サポーターランキング更新開始');
       await loadSupporters();
       
     } catch (e) {
-      showToast('送信エラー');
-      console.error(e);
+      console.error('投げ銭エラー:', e);
+      
+      // エラータイプに応じたメッセージ
+      let errorMessage = '送信に失敗しました';
+      if (e.name === 'AbortError') {
+        errorMessage = 'リクエストがタイムアウトしました';
+      } else if (e.message) {
+        errorMessage = e.message;
+      }
+      
+      showToast(errorMessage, 'error');
+    } finally {
+      // ✅ ボタンを元に戻す
+      const tipButtons = document.querySelectorAll('.tip-button');
+      tipButtons.forEach(btn => {
+        btn.disabled = false;
+        btn.style.opacity = '1';
+        
+        // 元のHTMLを復元
+        if (btn.restoreOriginal) {
+          btn.restoreOriginal();
+          delete btn.restoreOriginal;
+        }
+      });
     }
   }
 
