@@ -840,7 +840,16 @@
         let timeContributions = [];
         let socket = null;
 
-        // 認証チェック
+        // キャッシュシステム（高速化）
+        let dataCache = {
+            gifts: { data: null, timestamp: 0 },
+            users: { data: null, timestamp: 0 },
+            pitches: { data: null, timestamp: 0 },
+            contributions: { data: null, timestamp: 0 }
+        };
+        const CACHE_DURATION = 60000; // 1分間キャッシュ
+
+        // 認証チェック（高速化）
         function checkAuth() {
             const token = localStorage.getItem('authToken');
             const userStr = localStorage.getItem('user');
@@ -852,7 +861,6 @@
             
             try {
                 currentUser = JSON.parse(userStr);
-                // 管理者以外はアクセス不可
                 if (currentUser.role !== 'admin') {
                     alert('このページは管理者のみアクセス可能です');
                     window.location.href = 'home.html';
@@ -861,100 +869,169 @@
                 return true;
             } catch (error) {
                 console.error('ユーザー情報の解析に失敗:', error);
+                localStorage.removeItem('authToken');
+                localStorage.removeItem('user');
                 window.location.href = 'login.html';
                 return false;
             }
         }
 
-        // 管理者統計データを取得
+        // キャッシュチェック関数（高速化）
+        function getCachedData(key) {
+            const cached = dataCache[key];
+            const now = Date.now();
+            
+            if (cached.data && (now - cached.timestamp) < CACHE_DURATION) {
+                return cached.data;
+            }
+            return null;
+        }
+
+        // キャッシュ更新関数（高速化）
+        function setCachedData(key, data) {
+            dataCache[key] = {
+                data: data,
+                timestamp: Date.now()
+            };
+        }
+
+        // 管理者統計データを取得（高速化版）
         async function loadAdminStats() {
             try {
                 const token = localStorage.getItem('authToken');
                 
-                // 総ギフト額取得
-                const giftsResponse = await fetch('/api/admin/total-coins', {
-                    headers: {
-                        'x-user-id': token,  // ✅
-                        'Content-Type': 'application/json'
+                // 並列でAPI呼び出し（高速化）
+                const apiCalls = [];
+                
+                // キャッシュチェックして必要なAPIのみ呼び出し
+                if (!getCachedData('gifts')) {
+                    apiCalls.push(
+                        fetch('/api/admin/total-coins', {
+                            headers: {
+                                'x-user-id': token,
+                                'Content-Type': 'application/json'
+                            }
+                        }).then(res => res.ok ? res.json().then(data => ({type: 'gifts', data})) : null)
+                    );
+                }
+                
+                if (!getCachedData('users')) {
+                    apiCalls.push(
+                        fetch('/api/admin/users', {
+                            headers: {
+                                'x-user-id': token,
+                                'Content-Type': 'application/json'
+                            }
+                        }).then(res => res.ok ? res.json().then(data => ({type: 'users', data})) : null)
+                    );
+                }
+                
+                if (!getCachedData('pitches')) {
+                    apiCalls.push(
+                        fetch('/api/pitches', {
+                            headers: {
+                                'x-user-id': token,
+                                'Content-Type': 'application/json'
+                            }
+                        }).then(res => res.ok ? res.json().then(data => ({type: 'pitches', data})) : null)
+                    );
+                }
+                
+                if (!getCachedData('contributions')) {
+                    apiCalls.push(
+                        fetch('/api/admin/time-contributions', {
+                            headers: {
+                                'x-user-id': token,
+                                'Content-Type': 'application/json'
+                            }
+                        }).then(res => res.ok ? res.json().then(data => ({type: 'contributions', data})) : null)
+                    );
+                }
+                
+                // 並列実行（高速化）
+                const results = await Promise.all(apiCalls);
+                
+                // 結果の処理
+                results.forEach(result => {
+                    if (!result) return;
+                    
+                    setCachedData(result.type, result.data);
+                    
+                    switch (result.type) {
+                        case 'gifts':
+                            updateGiftsDisplay(result.data);
+                            break;
+                        case 'users':
+                            updateUsersDisplay(result.data);
+                            break;
+                        case 'pitches':
+                            updatePitchesDisplay(result.data);
+                            break;
+                        case 'contributions':
+                            updateContributionsDisplay(result.data);
+                            break;
                     }
                 });
                 
-                if (giftsResponse.ok) {
-                    const giftsData = await giftsResponse.json();
-                    document.getElementById('total-gifts').textContent = 
-                        `${giftsData.total.toLocaleString()} QUcoin`;
-                }
-
-                // ユーザー一覧取得
-                const usersResponse = await fetch('/api/admin/users', {
-                    headers: {
-                        'x-user-id': token,  // ✅
-                        'Content-Type': 'application/json'
-                    }
-                });
+                // キャッシュからデータを使用
+                const cachedGifts = getCachedData('gifts');
+                const cachedUsers = getCachedData('users');
+                const cachedPitches = getCachedData('pitches');
+                const cachedContributions = getCachedData('contributions');
                 
-                if (usersResponse.ok) {
-                    users = await usersResponse.json();
-                    document.getElementById('total-users').textContent = `${users.length} 人`;
-                    displayUsers();
-                }
-
-                // ピッチデータ取得
-                const pitchesResponse = await fetch('/api/pitches', {
-                    headers: {
-                        'x-user-id': token,
-                        'Content-Type': 'application/json'
-                    }
-                });
-
-                if (pitchesResponse.ok) {
-                    pitches = await pitchesResponse.json();
-                    updatePitchStats();
-                    displayEvents(); // ← この行を追加
-                }
-
-                // 時間貢献履歴取得
-                const contributionsResponse = await fetch('/api/admin/time-contributions', {
-                    headers: {
-                        'x-user-id': token,  // ✅
-                        'Content-Type': 'application/json'
-                    }
-                });
+                if (cachedGifts) updateGiftsDisplay(cachedGifts);
+                if (cachedUsers) updateUsersDisplay(cachedUsers);
+                if (cachedPitches) updatePitchesDisplay(cachedPitches);
+                if (cachedContributions) updateContributionsDisplay(cachedContributions);
                 
-                if (contributionsResponse.ok) {
-                    timeContributions = await contributionsResponse.json();
-                    displayContributions();
-                }
-
-                // 最近のギフト取得（サンプルデータ）
+                // サンプルギフトデータは最後に読み込み
                 loadRecentGifts();
-
+                
             } catch (error) {
                 console.error('管理者データの取得エラー:', error);
             }
         }
 
-        // ピッチ統計を更新
+        // 各表示更新関数（高速化）
+        function updateGiftsDisplay(data) {
+            const el = document.getElementById('total-gifts');
+            if (el) el.textContent = `${data.total.toLocaleString()} QUcoin`;
+        }
+
+        function updateUsersDisplay(data) {
+            users = data;
+            const el = document.getElementById('total-users');
+            if (el) el.textContent = `${users.length} 人`;
+            displayUsers();
+        }
+
+        function updatePitchesDisplay(data) {
+            pitches = data;
+            updatePitchStats();
+            displayEvents();
+        }
+
+        function updateContributionsDisplay(data) {
+            timeContributions = data;
+            displayContributions();
+        }
+
+        // ピッチ統計を更新（高速化）
         function updatePitchStats() {
             const totalPitches = pitches.length;
-            const totalViewers = pitches.reduce((sum, p) => sum + (p.participants || 0), 0);
-            
-            // 要素の存在チェック
             const totalPitchesEl = document.getElementById('total-pitches');
-            const totalViewersEl = document.getElementById('total-viewers');
             
             if (totalPitchesEl) {
                 totalPitchesEl.textContent = `${totalPitches} 件`;
             }
-            if (totalViewersEl) {
-                totalViewersEl.textContent = `${totalViewers} 人`;
-            }
         }
 
-        // イベント一覧を表示
+        // イベント一覧を表示（高速化）
         function displayEvents() {
             const container = document.getElementById('pitches-list');
             const emptyState = document.getElementById('empty-pitches');
+            
+            if (!container || !emptyState) return;
 
             if (pitches.length === 0) {
                 container.innerHTML = '';
@@ -963,44 +1040,75 @@
             }
 
             emptyState.classList.add('hidden');
-            container.innerHTML = pitches.map(pitch => createPitchItem(pitch)).join('');
-        }
-
-        // ピッチアイテムを作成（修正版）
-        function createPitchItem(pitch) {
-            const statusInfo = getStatusInfo(pitch.status);
             
-            return `
-                <div class="pitch-item">
+            // documentFragmentを使用（高速化）
+            const fragment = document.createDocumentFragment();
+            
+            // 表示件数制限（高速化）
+            const maxDisplay = 10;
+            const displayPitches = pitches.slice(0, maxDisplay);
+            
+            displayPitches.forEach(pitch => {
+                const pitchEl = createPitchElement(pitch);
+                fragment.appendChild(pitchEl);
+            });
+            
+            container.innerHTML = '';
+            container.appendChild(fragment);
+            
+            // 残りの件数表示
+            if (pitches.length > maxDisplay) {
+                const moreEl = document.createElement('div');
+                moreEl.className = 'pitch-item';
+                moreEl.innerHTML = `
                     <div class="pitch-header">
                         <div class="pitch-info">
-                            <h3 class="pitch-title">${pitch.title}</h3>
-                            <p class="pitch-team">チーム: ${pitch.team || '未設定'}</p>
-                        </div>
-                        <span class="status-badge ${statusInfo.className}">${statusInfo.label}</span>
-                    </div>
-                    
-                    <div class="pitch-stats">
-                        <div class="stat-item">
-                            <span class="stat-label">ギフト総額</span>
-                            <span class="stat-value">${pitch.totalTips || 0} QU</span>
+                            <h3 class="pitch-title">他 ${pitches.length - maxDisplay} 件のピッチがあります</h3>
                         </div>
                     </div>
-                    
-                    <div class="pitch-actions">
-                        ${getStatusButtons(pitch)}
-                        <button class="btn btn-delete" onclick="handleDeletePitch('${pitch._id}', '${pitch.title}')">
-                            <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                            </svg>
-                            削除
-                        </button>
-                    </div>
-                </div>
-            `;
+                `;
+                container.appendChild(moreEl);
+            }
         }
 
-        // ステータス情報を取得（修正版）
+        // ピッチ要素を作成（高速化）
+        function createPitchElement(pitch) {
+            const div = document.createElement('div');
+            div.className = 'pitch-item';
+            
+            const statusInfo = getStatusInfo(pitch.status);
+            
+            div.innerHTML = `
+                <div class="pitch-header">
+                    <div class="pitch-info">
+                        <h3 class="pitch-title">${pitch.title}</h3>
+                        <p class="pitch-team">チーム: ${pitch.team || '未設定'}</p>
+                    </div>
+                    <span class="status-badge ${statusInfo.className}">${statusInfo.label}</span>
+                </div>
+                
+                <div class="pitch-stats">
+                    <div class="stat-item">
+                        <span class="stat-label">ギフト総額</span>
+                        <span class="stat-value">${pitch.totalTips || 0} QU</span>
+                    </div>
+                </div>
+                
+                <div class="pitch-actions">
+                    ${getStatusButtons(pitch)}
+                    <button class="btn btn-delete" onclick="handleDeletePitch('${pitch._id}', '${pitch.title}')">
+                        <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                        </svg>
+                        削除
+                    </button>
+                </div>
+            `;
+            
+            return div;
+        }
+
+        // ステータス情報を取得
         function getStatusInfo(status) {
             switch (status) {
                 case 'live':
@@ -1012,7 +1120,7 @@
             }
         }
 
-        // ステータスボタンを取得（修正版）
+        // ステータスボタンを取得
         function getStatusButtons(pitch) {
             const buttons = [];
             
@@ -1052,7 +1160,7 @@
             return buttons.join('');
         }
 
-        // ステータス変更（既存の関数をそのまま使用）
+        // ステータス変更（高速化版）
         async function handleStatusChange(pitchId, newStatus) {
             try {
                 const token = localStorage.getItem('authToken');
@@ -1070,6 +1178,7 @@
                     const index = pitches.findIndex(p => p._id === pitchId);
                     if (index !== -1) {
                         pitches[index].status = newStatus;
+                        setCachedData('pitches', pitches); // キャッシュ更新
                         updatePitchStats();
                         displayEvents();
                     }
@@ -1090,7 +1199,7 @@
             }
         }
 
-        // ピッチ削除（既存の関数をそのまま使用）
+        // ピッチ削除（高速化版）
         async function handleDeletePitch(pitchId, title) {
             if (!confirm(`「${title}」を削除しますか？\n\n⚠️ この操作は取り消せません。関連する投げ銭データも削除されます。`)) return;
 
@@ -1106,6 +1215,7 @@
 
                 if (response.ok) {
                     pitches = pitches.filter(p => p._id !== pitchId);
+                    setCachedData('pitches', pitches); // キャッシュ更新
                     updatePitchStats();
                     displayEvents();
                     alert('ピッチを削除しました');
@@ -1120,21 +1230,25 @@
 
         // 最近のギフトを読み込み（サンプルデータ）
         function loadRecentGifts() {
+            // サンプルデータは軽量化
             recentGifts = [
                 { id: 1, user: 'ユーザー#4', amount: 100, timestamp: '2025/6/26 16:59:35', event: 'イベント#1' },
                 { id: 2, user: 'ユーザー#4', amount: 20,  timestamp: '2025/6/26 11:28:34', event: 'イベント#1' },
-                { id: 3, user: 'ユーザー#4', amount: 100, timestamp: '2025/6/26 11:28:22', event: 'イベント#1' },
-                { id: 4, user: 'ユーザー#4', amount: 100, timestamp: '2025/6/26 11:25:12', event: 'イベント#1' },
-                { id: 5, user: 'ユーザー#4', amount: 200, timestamp: '2025/6/25 10:51:19', event: 'イベント#1' },
-                { id: 6, user: 'ユーザー#4', amount: 50,  timestamp: '2025/6/25 10:51:11', event: 'イベント#1' }
+                { id: 3, user: 'ユーザー#4', amount: 100, timestamp: '2025/6/26 11:28:22', event: 'イベント#1' }
             ];
             displayGifts();
         }
 
-        // ギフト一覧を表示
+        // ギフト一覧を表示（高速化）
         function displayGifts() {
             const container = document.getElementById('gifts-list');
-            container.innerHTML = recentGifts.map(gift => createGiftItem(gift)).join('');
+            if (!container) return;
+            
+            // 表示件数制限（高速化）
+            const maxDisplay = 5;
+            const displayGifts = recentGifts.slice(0, maxDisplay);
+            
+            container.innerHTML = displayGifts.map(gift => createGiftItem(gift)).join('');
         }
 
         // ギフトアイテムを作成
@@ -1160,10 +1274,12 @@
             `;
         }
 
-        // 時間貢献履歴を表示
+        // 時間貢献履歴を表示（高速化）
         function displayContributions() {
             const container = document.getElementById('contributions-list');
             const emptyState = document.getElementById('empty-contributions');
+            
+            if (!container || !emptyState) return;
 
             if (timeContributions.length === 0) {
                 container.innerHTML = '';
@@ -1172,7 +1288,26 @@
             }
 
             emptyState.classList.add('hidden');
-            container.innerHTML = timeContributions.map(contribution => createContributionItem(contribution)).join('');
+            
+            // 表示件数制限（高速化）
+            const maxDisplay = 10;
+            const displayContributions = timeContributions.slice(0, maxDisplay);
+            
+            container.innerHTML = displayContributions.map(contribution => createContributionItem(contribution)).join('');
+            
+            // 残りの件数表示
+            if (timeContributions.length > maxDisplay) {
+                const moreDiv = document.createElement('div');
+                moreDiv.className = 'contribution-item';
+                moreDiv.innerHTML = `
+                    <div class="contribution-left">
+                        <div class="contribution-info">
+                            <div class="contribution-user">他 ${timeContributions.length - maxDisplay} 件の貢献履歴があります</div>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(moreDiv);
+            }
         }
 
         // 時間貢献アイテムを作成
@@ -1198,10 +1333,27 @@
             `;
         }
 
-        // ユーザー一覧を表示
+        // ユーザー一覧を表示（高速化）
         function displayUsers() {
             const tbody = document.getElementById('users-table-body');
-            tbody.innerHTML = users.map(user => createUserRow(user)).join('');
+            if (!tbody) return;
+            
+            // 表示件数制限（高速化）
+            const maxDisplay = 20;
+            const displayUsers = users.slice(0, maxDisplay);
+            
+            tbody.innerHTML = displayUsers.map(user => createUserRow(user)).join('');
+            
+            // 残りの件数表示
+            if (users.length > maxDisplay) {
+                const moreRow = document.createElement('tr');
+                moreRow.innerHTML = `
+                    <td colspan="6" style="text-align: center; color: #6b7280;">
+                        他 ${users.length - maxDisplay} 人のユーザーがあります
+                    </td>
+                `;
+                tbody.appendChild(moreRow);
+            }
         }
 
         // ユーザー行を作成
@@ -1246,7 +1398,7 @@
             return `<div class="role-badges">${badges}</div>`;
         }
 
-        // ユーザー削除
+        // ユーザー削除（高速化版）
         async function handleDeleteUser(userId, name) {
             if (!confirm(`ユーザー「${name}」を削除しますか？`)) return;
 
@@ -1255,15 +1407,21 @@
                 const response = await fetch(`/api/admin/users/${userId}`, {
                     method: 'DELETE',
                     headers: {
-                        'x-user-id': token,  // ✅
+                        'x-user-id': token,
                         'Content-Type': 'application/json'
                     }
                 });
 
                 if (response.ok) {
                     users = users.filter(u => u._id !== userId);
+                    setCachedData('users', users); // キャッシュ更新
                     displayUsers();
-                    document.getElementById('total-users').textContent = `${users.length} 人`;
+                    
+                    const totalUsersEl = document.getElementById('total-users');
+                    if (totalUsersEl) {
+                        totalUsersEl.textContent = `${users.length} 人`;
+                    }
+                    
                     alert('ユーザーを削除しました');
                 } else {
                     alert('ユーザーの削除に失敗しました');
@@ -1274,7 +1432,7 @@
             }
         }
 
-        // 履歴リセット
+        // 履歴リセット（高速化版）
         async function handleResetHistory() {
             if (!confirm('時間貢献履歴をリセットしますか？')) return;
 
@@ -1283,13 +1441,14 @@
                 const response = await fetch('/api/admin/reset-time-contributions', {
                     method: 'POST',
                     headers: {
-                        'x-user-id': token,  // ✅
+                        'x-user-id': token,
                         'Content-Type': 'application/json'
                     }
                 });
 
                 if (response.ok) {
                     timeContributions = [];
+                    setCachedData('contributions', timeContributions); // キャッシュ更新
                     displayContributions();
                     alert('履歴をリセットしました');
                 } else {
@@ -1301,40 +1460,41 @@
             }
         }
 
-        // Socket.IO接続を初期化
+        // Socket.IO接続を初期化（高速化）
         function initializeSocket() {
             try {
                 if (typeof io !== 'undefined') {
                     socket = io();
                     
-                    // リアルタイム総ギフト額更新
                     socket.on('total-coins-updated', (sum) => {
-                        document.getElementById('total-gifts').textContent = 
-                            `${sum.toLocaleString()} QUcoin`;
+                        const el = document.getElementById('total-gifts');
+                        if (el) el.textContent = `${sum.toLocaleString()} QUcoin`;
                     });
 
-                    // 新しいピッチの通知
                     socket.on('pitch-created', (newPitch) => {
                         pitches.push(newPitch);
+                        setCachedData('pitches', pitches);
                         updatePitchStats();
                         displayEvents();
                     });
 
-                    // ピッチ更新の通知
                     socket.on('pitch-updated', (updatedPitch) => {
                         const index = pitches.findIndex(p => p._id === updatedPitch._id);
                         if (index !== -1) {
                             pitches[index] = updatedPitch;
+                            setCachedData('pitches', pitches);
                             updatePitchStats();
                             displayEvents();
                         }
                     });
 
-                    // 新しいユーザー登録の通知
                     socket.on('user-registered', (newUser) => {
                         users.push(newUser);
+                        setCachedData('users', users);
                         displayUsers();
-                        document.getElementById('total-users').textContent = `${users.length} 人`;
+                        
+                        const el = document.getElementById('total-users');
+                        if (el) el.textContent = `${users.length} 人`;
                     });
                 }
             } catch (error) {
@@ -1349,7 +1509,7 @@
             }
         }
 
-        // ページ読み込み時の初期化
+        // ページ読み込み時の初期化（高速化）
         window.addEventListener('load', async () => {
             if (!checkAuth()) return;
             

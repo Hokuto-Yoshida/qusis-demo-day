@@ -236,8 +236,7 @@ function createPitchCard(pitch) {
   tipsStat.textContent = `${pitch.totalTips || 0} QU`;
   
   const pitchId = document.createElement('span');
-  pitchId.className = 'pitch-id';
-  pitchId.textContent = `#${pitch._id}`;
+
   
   statsLeft.appendChild(tipsStat);
   statsDiv.appendChild(statsLeft);
