@@ -88,10 +88,17 @@
         }
         
         .cover-image {
-            height: 12rem;
-            background: linear-gradient(135deg, #14b8a6, #2563eb);
             position: relative;
+            height: 12rem;
+            overflow: hidden;
+            border-radius: 0.5rem 0.5rem 0 0;
+            /* 🚀 背景画像用の追加スタイル */
+            background-size: cover !important;
+            background-position: center !important;
+            background-repeat: no-repeat !important;
+            /* プレースホルダー用のflexスタイル */
             display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
         }
@@ -381,6 +388,46 @@
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
+        }
+
+        /* 無効化されたボタンのスタイル */
+        .btn-disabled {
+        background: #9ca3af !important;
+        color: #ffffff !important;
+        cursor: not-allowed !important;
+        opacity: 0.6;
+        pointer-events: none; /* クリックを完全に無効化 */
+        }
+
+        .btn-disabled:hover {
+        background: #9ca3af !important;
+        transform: none !important;
+        box-shadow: none !important;
+        }
+
+        /* 開始前ピッチカード全体を少し薄くする */
+        .pitch-card:has(.btn-disabled) {
+        opacity: 0.8;
+        }
+
+        .pitch-card:has(.btn-disabled) .cover-image {
+        filter: grayscale(20%);
+        }
+
+        /* 終了したピッチのボタンスタイル */
+        .btn-ended {
+        background: #059669;
+        color: white;
+        }
+
+        .btn-ended:hover {
+        background: #047857;
+        }
+
+        /* 統計情報のスタイル改善 */
+        .stat-item.participants {
+        color: #6b7280;
+        font-size: 0.875rem;
         }
     </style>
 </head>

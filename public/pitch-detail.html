@@ -674,6 +674,7 @@
         }
     </style>
 </head>
+<!-- pitch-detail.html のbody部分を以下に置き換え -->
 <body>
     <div class="container">
         <!-- Loading State -->
@@ -719,7 +720,40 @@
                         </div>
                     </div>
 
-                    <!-- Chat -->
+                    <!-- 🚀 投げ銭セクションを上に移動 -->
+                    <div class="card tip-section" id="tip-section">
+                        <div class="section-header">
+                            <svg class="section-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: #ea580c;">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v13m0-13V6a2 2 0 112 0v1m-2 0V5.5A1.5 1.5 0 0113.5 4h-3A1.5 1.5 0 019 5.5V6m3 2a4 4 0 00-4 4v6a1 1 0 001 1h6a1 1 0 001-1v-6a4 4 0 00-4-4z"/>
+                            </svg>
+                            <h3 class="section-title">応援の気持ちを投げ銭で表現しよう！</h3>
+                        </div>
+                        <div class="ranking-content">
+                            <div class="tip-disclaimer">
+                                ※この投げ銭は仮想的な表現です。金銭的取引は運営しません。
+                            </div>
+                            <div class="tip-grid">
+                                <button class="tip-button tip-1" data-amount="10">
+                                    <div class="tip-label">応援</div>
+                                    <div class="tip-amount">10 QUcoin</div>
+                                </button>
+                                <button class="tip-button tip-2" data-amount="20">
+                                    <div class="tip-label">頑張って！</div>
+                                    <div class="tip-amount">20 QUcoin</div>
+                                </button>
+                                <button class="tip-button tip-3" data-amount="50">
+                                    <div class="tip-label">素晴らしい！</div>
+                                    <div class="tip-amount">50 QUcoin</div>
+                                </button>
+                                <button class="tip-button tip-4" data-amount="100">
+                                    <div class="tip-label">最高！</div>
+                                    <div class="tip-amount">100 QUcoin</div>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- チャットセクションを下に移動 -->
                     <div class="card chat-section">
                         <div class="section-header">
                             <svg class="section-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -752,40 +786,6 @@
 
                 <!-- Right Column -->
                 <div class="right-column">
-                    <!-- Tip Section -->
-                    <div class="card tip-section" id="tip-section">
-                        <div class="section-header">
-                            <svg class="section-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: #ea580c;">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v13m0-13V6a2 2 0 112 0v1m-2 0V5.5A1.5 1.5 0 0113.5 4h-3A1.5 1.5 0 019 5.5V6m3 2a4 4 0 00-4 4v6a1 1 0 001 1h6a1 1 0 001-1v-6a4 4 0 00-4-4z"/>
-                            </svg>
-                            <h3 class="section-title">応援の気持ちを投げ銭で表現しよう！</h3>
-                        </div>
-                        <div class="ranking-content">
-                            <div class="tip-disclaimer">
-                                ※この投げ銭は仮想的な表現です。金銭的取引は運営しません。
-                            </div>
-                            <div class="tip-grid">
-                                <button class="tip-button tip-1" data-amount="10">
-                                    <div class="tip-label">応援</div>
-                                    <div class="tip-amount">10 QUcoin</div>
-                                </button>
-
-                                <button class="tip-button tip-2" data-amount="20">
-                                    <div class="tip-label">頑張って！</div>
-                                    <div class="tip-amount">20 QUcoin</div>
-                                </button>
-                                <button class="tip-button tip-3" data-amount="50">
-                                    <div class="tip-label">素晴らしい！</div>
-                                    <div class="tip-amount">50 QUcoin</div>
-                                </button>
-                                <button class="tip-button tip-4" data-amount="100">
-                                    <div class="tip-label">最高！</div>
-                                    <div class="tip-amount">100 QUcoin</div>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
                     <!-- Support Ranking -->
                     <div class="card ranking-section">
                         <div class="section-header">
@@ -811,6 +811,7 @@
             </div>
         </div>
     </div>
+    
     <!-- Socket.io CDN -->
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
 

@@ -149,9 +149,27 @@ function displayPitches(pitches) {
 // 6. ピッチカード生成（DOMベース・高速化）
 function createPitchCard(pitch) {
   const statusMap = {
-    live: { label: 'デモ中', badge: 'status-live', btn: 'btn-live', action: 'デモを見る' },
-    ended: { label: '終了', badge: 'status-ended', btn: 'btn-upcoming', action: '応援する' },
-    upcoming: { label: '開始前', badge: 'status-upcoming', btn: 'btn-upcoming', action: '応援する' }
+    live: { 
+      label: 'デモ中', 
+      badge: 'status-live', 
+      btn: 'btn-live', 
+      action: 'デモを見る',
+      clickable: true
+    },
+    ended: { 
+      label: '終了', 
+      badge: 'status-ended', 
+      btn: 'btn-ended', 
+      action: '応援する',
+      clickable: true
+    },
+    upcoming: { 
+      label: '開始前', 
+      badge: 'status-upcoming', 
+      btn: 'btn-disabled', 
+      action: 'まもなく開始',
+      clickable: false
+    }
   };
   
   const status = statusMap[pitch.status] || statusMap.upcoming;
@@ -164,26 +182,56 @@ function createPitchCard(pitch) {
   const coverDiv = document.createElement('div');
   coverDiv.className = 'cover-image';
   
+  // プレースホルダーを先に作成
+  const placeholder = createCoverPlaceholder(pitch.team);
+  coverDiv.appendChild(placeholder);
+  
+  // カバー画像がある場合の処理
   if (pitch.coverImage && pitch.coverImage.trim()) {
+    console.log(`🖼️ カバー画像を設定: ${pitch.title}`, pitch.coverImage.substring(0, 50));
+    
     const img = document.createElement('img');
+    
+    // ✅ 重要: 適切なスタイルとクラスを設定
+    img.style.cssText = `
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center;
+      z-index: 1;
+    `;
+    
     img.src = pitch.coverImage;
     img.alt = `${pitch.team}のピッチ`;
-    img.onerror = function() {
-      // 画像読み込み失敗時はプレースホルダーに切り替え
-      this.style.display = 'none';
-      const placeholder = createCoverPlaceholder(pitch.team);
-      coverDiv.appendChild(placeholder);
+    
+    // 画像読み込み成功時: プレースホルダーを隠す
+    img.onload = function() {
+      console.log(`✅ 画像読み込み成功: ${pitch.title}`);
+      placeholder.style.display = 'none';
+      this.style.display = 'block';
     };
+    
+    // 画像読み込み失敗時: プレースホルダーを表示
+    img.onerror = function() {
+      console.log(`❌ 画像読み込み失敗: ${pitch.title}`);
+      this.style.display = 'none';
+      placeholder.style.display = 'flex';
+    };
+    
+    // 初期状態では画像を非表示
+    img.style.display = 'none';
+    
     coverDiv.appendChild(img);
-  } else {
-    const placeholder = createCoverPlaceholder(pitch.team);
-    coverDiv.appendChild(placeholder);
   }
   
   // ステータスバッジ
   const statusBadge = document.createElement('div');
   statusBadge.className = `status-badge ${status.badge}`;
   statusBadge.textContent = status.label;
+  statusBadge.style.zIndex = '10'; // バッジを最前面に
   coverDiv.appendChild(statusBadge);
   
   // ライブインジケーター
@@ -191,6 +239,7 @@ function createPitchCard(pitch) {
     const liveIndicator = document.createElement('div');
     liveIndicator.className = 'live-indicator';
     liveIndicator.innerHTML = '<div class="live-dot"></div><span class="live-text">LIVE</span>';
+    liveIndicator.style.zIndex = '10'; // インジケーターを最前面に
     coverDiv.appendChild(liveIndicator);
   }
   
@@ -235,47 +284,89 @@ function createPitchCard(pitch) {
   tipsStat.className = 'stat-item';
   tipsStat.textContent = `${pitch.totalTips || 0} QU`;
   
-  const pitchId = document.createElement('span');
-
+  const participantsStat = document.createElement('span');
+  participantsStat.className = 'stat-item participants';
+  participantsStat.textContent = `${pitch.participants || 0}人`;
   
   statsLeft.appendChild(tipsStat);
   statsDiv.appendChild(statsLeft);
-  statsDiv.appendChild(pitchId);
+  statsDiv.appendChild(participantsStat);
   
-  // アクションボタン
-  const actionLink = document.createElement('a');
-  actionLink.href = `/pitch-detail.html?id=${pitch._id}`;
-  actionLink.className = `action-btn ${status.btn}`;
-  actionLink.textContent = status.action;
+  // アクションボタン（ステータスに応じて制御）
+  const actionElement = document.createElement(status.clickable ? 'a' : 'button');
   
-  // イベントリスナー追加（ナビゲーション分析用）
-  actionLink.addEventListener('click', () => {
-    console.log(`🎯 ピッチ詳細へ移動: ${pitch.title} (${pitch._id})`);
-  });
+  if (status.clickable) {
+    // クリック可能（live または ended）
+    actionElement.href = `/pitch-detail.html?id=${pitch._id}`;
+    actionElement.className = `action-btn ${status.btn}`;
+    actionElement.textContent = status.action;
+    
+    // イベントリスナー追加（ナビゲーション分析用）
+    actionElement.addEventListener('click', () => {
+      console.log(`🎯 ピッチ詳細へ移動: ${pitch.title} (${pitch._id})`);
+    });
+  } else {
+    // クリック不可（upcoming）
+    actionElement.className = `action-btn ${status.btn}`;
+    actionElement.textContent = status.action;
+    actionElement.disabled = true;
+    
+    // クリック時の説明
+    actionElement.addEventListener('click', (e) => {
+      e.preventDefault();
+      console.log(`⏳ ピッチ開始前: ${pitch.title}`);
+    });
+  }
   
   // 要素組み立て
   contentDiv.appendChild(headerDiv);
   contentDiv.appendChild(title);
   contentDiv.appendChild(description);
   contentDiv.appendChild(statsDiv);
-  contentDiv.appendChild(actionLink);
+  contentDiv.appendChild(actionElement);
   
   cardDiv.appendChild(contentDiv);
   
   return cardDiv;
 }
 
-// 7. カバープレースホルダー作成
+// 7. カバープレースホルダー作成（修正版）
 function createCoverPlaceholder(teamName) {
   const placeholder = document.createElement('div');
   placeholder.className = 'cover-placeholder';
   
+  // ✅ 適切なスタイルを設定
+  placeholder.style.cssText = `
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #14b8a6, #2563eb);
+    color: white;
+    text-align: center;
+    z-index: 0;
+  `;
+  
   const teamNameDiv = document.createElement('div');
   teamNameDiv.className = 'team-name';
+  teamNameDiv.style.cssText = `
+    font-size: 1.5rem;
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+  `;
   teamNameDiv.textContent = teamName || 'チーム未設定';
   
   const coverText = document.createElement('div');
   coverText.className = 'cover-text';
+  coverText.style.cssText = `
+    font-size: 0.875rem;
+    opacity: 0.9;
+  `;
   coverText.textContent = 'Cover Image';
   
   placeholder.appendChild(teamNameDiv);

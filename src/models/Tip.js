@@ -1,4 +1,4 @@
-// src/models/Tip.js
+// src/models/Tip.js - 高速化版
 import mongoose from 'mongoose';
 
 const tipSchema = new mongoose.Schema({
@@ -22,7 +22,12 @@ const tipSchema = new mongoose.Schema({
     default: ''
   }
 }, {
-  timestamps: true  // createdAt / updatedAt を自動追加
+  timestamps: true
 });
+
+// 🚀 高速化のための重要インデックス
+tipSchema.index({ pitch: 1, createdAt: -1 });    // ピッチ別投げ銭履歴（最新順）
+tipSchema.index({ user: 1, createdAt: -1 });     // ユーザー別投げ銭履歴
+tipSchema.index({ createdAt: -1 });              // 管理画面の最新投げ銭表示用
 
 export default mongoose.model('Tip', tipSchema);
