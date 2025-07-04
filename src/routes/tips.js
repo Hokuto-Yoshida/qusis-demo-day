@@ -1,16 +1,16 @@
-// src/routes/tips.js - 最適化・高速化版
+// src/routes/tips.js - エラー対策強化版
 import { Router } from 'express';
 import Tip from '../models/Tip.js';
 import Pitch from '../models/Pitch.js';
 import User from '../models/User.js';
-import { authenticate } from '../middleware/auth.js';
+import { authenticate, invalidateUserCache } from '../middleware/auth.js';
 import mongoose from 'mongoose';
 
 const router = Router();
 
-// 投げ銭追加（認証必要）- 最適化版
+// 🚀 投げ銭追加（認証必要）- エラー対策強化版
 router.post('/', authenticate, async (req, res) => {
-  const session = await mongoose.startSession();
+  let session = null;
   
   try {
     const { pitch: pitchId, amount, message } = req.body;
@@ -18,7 +18,7 @@ router.post('/', authenticate, async (req, res) => {
     
     console.log('💰 投げ銭リクエスト:', { pitchId, userId, amount, message });
     
-    // ✅ バリデーション強化
+    // ✅ 早期バリデーション（DBアクセス前）
     if (!pitchId || !amount || amount <= 0 || amount > 1000) {
       return res.status(400).json({ 
         success: false,
@@ -26,7 +26,7 @@ router.post('/', authenticate, async (req, res) => {
       });
     }
 
-    // ✅ 型チェック
+    // ✅ ObjectId検証（早期リターン）
     if (!mongoose.Types.ObjectId.isValid(pitchId)) {
       return res.status(400).json({ 
         success: false,
@@ -34,14 +34,29 @@ router.post('/', authenticate, async (req, res) => {
       });
     }
 
-    // ✅ トランザクション開始
-    session.startTransaction();
+    // ✅ ユーザー残高の事前チェック（キャッシュされた値）
+    if (req.user.coinBalance < amount) {
+      return res.status(400).json({ 
+        success: false,
+        error: `コイン残高が不足しています（残高: ${req.user.coinBalance}コイン）` 
+      });
+    }
 
-    // ✅ 並列でピッチとユーザー情報を取得（高速化）
-    const [pitch, currentUser] = await Promise.all([
-      Pitch.findById(pitchId).select('_id createdBy team totalTips').session(session),
-      User.findById(userId).select('_id coinBalance team').session(session)
-    ]);
+    // 🚀 セッション作成（タイムアウト付き）
+    session = await mongoose.startSession();
+    
+    // 🚀 トランザクション開始（タイムアウト設定）
+    await session.startTransaction({
+      readConcern: { level: 'snapshot' },
+      writeConcern: { w: 'majority', j: true },
+      maxTimeMS: 15000 // 15秒タイムアウト
+    });
+
+    // 🚀 並列でピッチ情報を取得（最小限のフィールド）
+    const pitch = await Pitch.findById(pitchId)
+      .select('_id createdBy team totalTips')
+      .session(session)
+      .lean(); // 高速化
 
     // ピッチ存在チェック
     if (!pitch) {
@@ -52,18 +67,9 @@ router.post('/', authenticate, async (req, res) => {
       });
     }
 
-    // ✅ 残高チェック（最新データで）
-    if (currentUser.coinBalance < amount) {
-      await session.abortTransaction();
-      return res.status(400).json({ 
-        success: false,
-        error: `コイン残高が不足しています（残高: ${currentUser.coinBalance}コイン）` 
-      });
-    }
-
     // ✅ 自分のピッチチェック（チーム単位）
     if (pitch.createdBy?.toString() === userId.toString() || 
-        (pitch.team && currentUser.team && pitch.team === currentUser.team)) {
+        (pitch.team && req.user.team && pitch.team === req.user.team)) {
       await session.abortTransaction();
       return res.status(400).json({ 
         success: false,
@@ -71,7 +77,21 @@ router.post('/', authenticate, async (req, res) => {
       });
     }
 
-    // ✅ アトミックな更新操作（並列実行）
+    // 🚀 最新ユーザー残高を再確認（競合対策）
+    const currentUser = await User.findById(userId)
+      .select('coinBalance')
+      .session(session)
+      .lean();
+
+    if (!currentUser || currentUser.coinBalance < amount) {
+      await session.abortTransaction();
+      return res.status(400).json({ 
+        success: false,
+        error: `コイン残高が不足しています（最新残高: ${currentUser?.coinBalance || 0}コイン）` 
+      });
+    }
+
+    // 🚀 アトミックな更新操作（findOneAndUpdate を使用）
     const [tip, updatedUser] = await Promise.all([
       // 投げ銭記録作成
       Tip.create([{ 
@@ -88,7 +108,11 @@ router.post('/', authenticate, async (req, res) => {
           coinBalance: { $gte: amount } // 残高チェックを条件に含める
         },
         { $inc: { coinBalance: -amount } },
-        { new: true, session }
+        { 
+          new: true, 
+          session,
+          select: 'coinBalance' // 必要フィールドのみ
+        }
       )
     ]);
 
@@ -102,16 +126,28 @@ router.post('/', authenticate, async (req, res) => {
     }
 
     // ピッチの総投げ銭額を更新
-    await Pitch.findByIdAndUpdate(
+    const updatedPitch = await Pitch.findByIdAndUpdate(
       pitchId, 
       { $inc: { totalTips: amount } },
-      { session }
+      { 
+        new: true, 
+        session,
+        select: 'totalTips'
+      }
     );
 
-    // ✅ トランザクションコミット
+    // 🚀 トランザクションコミット
     await session.commitTransaction();
 
-    console.log('✅ 投げ銭作成成功:', tip[0]);
+    console.log('✅ 投げ銭作成成功:', {
+      tipId: tip[0]._id,
+      amount: amount,
+      newBalance: updatedUser.coinBalance,
+      newTotalTips: updatedPitch.totalTips
+    });
+    
+    // 🚀 ユーザーキャッシュを無効化（残高更新のため）
+    invalidateUserCache(userId.toString());
     
     // ✅ レスポンス最適化（必要最小限のデータ）
     res.status(201).json({
@@ -122,18 +158,29 @@ router.post('/', authenticate, async (req, res) => {
         createdAt: tip[0].createdAt
       },
       newBalance: updatedUser.coinBalance,
-      newTotalTips: (pitch.totalTips || 0) + amount
+      newTotalTips: updatedPitch.totalTips
     });
 
   } catch (err) {
-    // ✅ エラー時は必ずロールバック
-    if (session.inTransaction()) {
-      await session.abortTransaction();
+    // 🚀 エラー時は必ずロールバック
+    if (session && session.inTransaction()) {
+      try {
+        await session.abortTransaction();
+        console.log('🔄 トランザクションロールバック完了');
+      } catch (rollbackError) {
+        console.error('❌ ロールバックエラー:', rollbackError);
+      }
     }
     
-    console.error('❌ 投げ銭エラー:', err);
+    console.error('❌ 投げ銭エラー:', {
+      error: err,
+      name: err.name,
+      code: err.code,
+      userId: req.user?._id,
+      pitchId: req.body?.pitch
+    });
     
-    // エラータイプに応じたレスポンス
+    // 🚀 エラータイプに応じた詳細レスポンス
     if (err.name === 'ValidationError') {
       return res.status(400).json({ 
         success: false,
@@ -148,17 +195,40 @@ router.post('/', authenticate, async (req, res) => {
       });
     }
     
+    if (err.name === 'MongoTimeoutError' || err.code === 50) {
+      return res.status(408).json({ 
+        success: false,
+        error: 'リクエストタイムアウトです。再試行してください' 
+      });
+    }
+    
+    if (err.code === 11000) {
+      return res.status(409).json({ 
+        success: false,
+        error: '重複する投げ銭です。しばらく待ってから再試行してください' 
+      });
+    }
+    
+    // 🚀 一般的なサーバーエラー
     res.status(500).json({ 
       success: false,
-      error: 'サーバー内部エラーが発生しました' 
+      error: 'サーバー内部エラーが発生しました。しばらく待ってから再試行してください' 
     });
+    
   } finally {
-    // ✅ セッション必須クリーンアップ
-    await session.endSession();
+    // 🚀 セッション必須クリーンアップ
+    if (session) {
+      try {
+        await session.endSession();
+        console.log('🧹 Mongooseセッション終了');
+      } catch (cleanupError) {
+        console.error('❌ セッションクリーンアップエラー:', cleanupError);
+      }
+    }
   }
 });
 
-// 特定ピッチの投げ銭履歴取得（認証不要）- 高速化版
+// 🚀 特定ピッチの投げ銭履歴取得（認証不要）- 高速化版
 router.get('/:pitchId', async (req, res) => {
   try {
     const { pitchId } = req.params;
@@ -182,7 +252,7 @@ router.get('/:pitchId', async (req, res) => {
   }
 });
 
-// サポーターランキング取得 - 高速化版
+// 🚀 サポーターランキング取得 - 高速化版
 router.get('/:pitchId/supporters', async (req, res) => {
   try {
     const { pitchId } = req.params;
@@ -196,7 +266,7 @@ router.get('/:pitchId/supporters', async (req, res) => {
     
     const pitchObjectId = new mongoose.Types.ObjectId(pitchId);
     
-    // ✅ 最適化されたAggregation（インデックス活用）
+    // 🚀 最適化されたAggregation（タイムアウト付き）
     const supporters = await Tip.aggregate([
       // まず該当ピッチの投げ銭に絞り込み（インデックス活用）
       { $match: { pitch: pitchObjectId } },
@@ -245,13 +315,21 @@ router.get('/:pitchId/supporters', async (req, res) => {
           lastTipDate: 1
         }
       }
-    ]);
+    ]).option({ maxTimeMS: 10000 }); // 10秒タイムアウト
 
     console.log(`📊 サポーター数: ${supporters.length}`);
     
     res.json(supporters);
   } catch (err) {
     console.error('❌ サポーターランキング取得エラー:', err);
+    
+    if (err.name === 'MongoTimeoutError') {
+      return res.status(408).json({ 
+        success: false,
+        error: 'ランキング取得がタイムアウトしました。再試行してください' 
+      });
+    }
+    
     res.status(500).json({ 
       success: false,
       error: 'サポーターランキングの取得に失敗しました' 
