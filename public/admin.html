@@ -6,15 +6,12 @@
     <title>管理者ダッシュボード - QUSIS デモデイ</title>
     <script src="js/header.js"></script>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        /* 🚀 最適化: CSSリセットを最小化 */
+        *{margin:0;padding:0;box-sizing:border-box}
         
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background-color: #f9fafb;
+            background: #f9fafb;
             color: #111827;
             line-height: 1.5;
         }
@@ -65,7 +62,6 @@
         .header-text h1 {
             font-size: 1.875rem;
             font-weight: bold;
-            color: #111827;
         }
         
         .header-text p {
@@ -114,6 +110,87 @@
             }
         }
         
+        .stat-card {
+            background: white;
+            border-radius: 0.5rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e5e7eb;
+            padding: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .stat-content p:first-child {
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: #6b7280;
+            margin-bottom: 0.25rem;
+        }
+        
+        .stat-value {
+            font-size: 1.875rem;
+            font-weight: bold;
+        }
+        
+        .stat-icon {
+            width: 2rem;
+            height: 2rem;
+        }
+        
+        .stat-icon.green { color: #16a34a; }
+        .stat-icon.blue { color: #2563eb; }
+        .stat-icon.purple { color: #7c3aed; }
+        .stat-icon.orange { color: #ea580c; }
+        
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+        
+        @media (min-width: 1024px) {
+            .main-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        
+        .panel {
+            background: white;
+            border-radius: 0.5rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e5e7eb;
+        }
+        
+        .panel-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .panel-icon {
+            width: 1.25rem;
+            height: 1.25rem;
+        }
+        
+        .panel-icon.purple { color: #7c3aed; }
+        .panel-icon.green { color: #16a34a; }
+        .panel-icon.gray { color: #6b7280; }
+        .panel-icon.blue { color: #2563eb; }
+        
+        .panel-title {
+            font-size: 1.25rem;
+            font-weight: bold;
+        }
+        
+        .panel-content {
+            padding: 1.5rem;
+        }
+        
+        /* 🚀 最適化: ピッチアイテムのスタイル統合 */
         .pitch-item {
             border: 1px solid #e5e7eb;
             border-radius: 0.5rem;
@@ -129,14 +206,11 @@
             margin-bottom: 1rem;
         }
 
-        .pitch-info {
-            flex: 1;
-        }
+        .pitch-info { flex: 1; }
 
         .pitch-title {
             font-size: 1.125rem;
             font-weight: bold;
-            color: #111827;
             margin-bottom: 0.25rem;
         }
 
@@ -178,7 +252,6 @@
         .pitch-stats .stat-value {
             font-size: 1rem;
             font-weight: 600;
-            color: #111827;
         }
 
         .pitch-actions {
@@ -187,216 +260,17 @@
             flex-wrap: wrap;
         }
 
-        .btn-restart {
-            background: #f59e0b;
-            color: white;
-        }
-
-        .btn-restart:hover {
-            background: #d97706;
-        }
-
-        /* ステータスバッジの色調整 */
-        .status-badge.status-upcoming {
-            background: #dbeafe;
-            color: #1e40af;
-        }
-
-        .status-badge.status-live {
-            background: #fef2f2;
-            color: #dc2626;
-            animation: pulse 2s infinite;
-        }
-
-        .status-badge.status-ended {
-            background: #f3f4f6;
-            color: #6b7280;
-        }
+        /* 🚀 最適化: ステータスバッジの統合 */
+        .status-badge.status-upcoming { background: #dbeafe; color: #1e40af; }
+        .status-badge.status-live { background: #fef2f2; color: #dc2626; animation: pulse 2s infinite; }
+        .status-badge.status-ended { background: #f3f4f6; color: #6b7280; }
 
         @keyframes pulse {
-            0%, 100% {
-                opacity: 1;
-            }
-            50% {
-                opacity: 0.7;
-            }
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
         }
 
-        /* レスポンシブ対応 */
-        @media (max-width: 640px) {
-            .pitch-header {
-                flex-direction: column;
-                gap: 1rem;
-            }
-            
-            .pitch-actions {
-                justify-content: center;
-            }
-            
-            .pitch-stats {
-                grid-template-columns: 1fr;
-                gap: 0.5rem;
-            }
-        }
-
-        .stat-card {
-            background: white;
-            border-radius: 0.5rem;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-            border: 1px solid #e5e7eb;
-            padding: 1.5rem;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-        
-        .stat-content p:first-child {
-            font-size: 0.875rem;
-            font-weight: 500;
-            color: #6b7280;
-            margin-bottom: 0.25rem;
-        }
-        
-        .stat-value {
-            font-size: 1.875rem;
-            font-weight: bold;
-            color: #111827;
-        }
-        
-        .stat-icon {
-            width: 2rem;
-            height: 2rem;
-        }
-        
-        .stat-icon.green {
-            color: #16a34a;
-        }
-        
-        .stat-icon.blue {
-            color: #2563eb;
-        }
-        
-        .stat-icon.purple {
-            color: #7c3aed;
-        }
-        
-        .stat-icon.orange {
-            color: #ea580c;
-        }
-        
-        .main-grid {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 2rem;
-            margin-bottom: 2rem;
-        }
-        
-        @media (min-width: 1024px) {
-            .main-grid {
-                grid-template-columns: repeat(2, 1fr);
-            }
-        }
-        
-        .panel {
-            background: white;
-            border-radius: 0.5rem;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-            border: 1px solid #e5e7eb;
-        }
-        
-        .panel-header {
-            padding: 1.5rem;
-            border-bottom: 1px solid #e5e7eb;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-        
-        .panel-icon {
-            width: 1.25rem;
-            height: 1.25rem;
-        }
-        
-        .panel-icon.purple {
-            color: #7c3aed;
-        }
-        
-        .panel-icon.green {
-            color: #16a34a;
-        }
-        
-        .panel-icon.gray {
-            color: #6b7280;
-        }
-        
-        .panel-icon.blue {
-            color: #2563eb;
-        }
-        
-        .panel-title {
-            font-size: 1.25rem;
-            font-weight: bold;
-            color: #111827;
-        }
-        
-        .panel-content {
-            padding: 1.5rem;
-        }
-        
-        .event-item {
-            border: 1px solid #e5e7eb;
-            border-radius: 0.5rem;
-            padding: 1rem;
-            margin-bottom: 1rem;
-        }
-        
-        .event-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            margin-bottom: 0.5rem;
-        }
-        
-        .event-title {
-            font-weight: 600;
-            color: #111827;
-        }
-        
-        .event-team {
-            font-size: 0.875rem;
-            color: #7c3aed;
-        }
-        
-        .event-status {
-            padding: 0.25rem 0.5rem;
-            border-radius: 9999px;
-            font-size: 0.75rem;
-        }
-        
-        .event-status.live {
-            background: #fef2f2;
-            color: #b91c1c;
-        }
-        
-        .event-status.ended {
-            background: #f3f4f6;
-            color: #1f2937;
-        }
-        
-        .event-stats {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 1rem;
-            font-size: 0.875rem;
-            color: #6b7280;
-            margin-bottom: 0.5rem;
-        }
-        
-        .event-actions {
-            display: flex;
-            gap: 0.5rem;
-        }
-        
+        /* 🚀 最適化: ボタンスタイルの統合 */
         .btn {
             padding: 0.25rem 0.75rem;
             border-radius: 0.25rem;
@@ -409,107 +283,18 @@
             border: none;
         }
         
-        .btn-start {
-            background: #16a34a;
-            color: white;
-        }
+        .btn-start { background: #16a34a; color: white; }
+        .btn-start:hover { background: #15803d; }
+        .btn-end { background: #dc2626; color: white; }
+        .btn-end:hover { background: #b91c1c; }
+        .btn-delete { background: #fef2f2; color: #b91c1c; }
+        .btn-delete:hover { background: #fecaca; }
+        .btn-restart { background: #f59e0b; color: white; }
+        .btn-restart:hover { background: #d97706; }
         
-        .btn-start:hover {
-            background: #15803d;
-        }
+        .btn-icon { width: 0.75rem; height: 0.75rem; }
         
-        .btn-end {
-            background: #dc2626;
-            color: white;
-        }
-        
-        .btn-end:hover {
-            background: #b91c1c;
-        }
-        
-        .btn-delete {
-            background: #fef2f2;
-            color: #b91c1c;
-        }
-        
-        .btn-delete:hover {
-            background: #fecaca;
-        }
-        
-        .btn-icon {
-            width: 0.75rem;
-            height: 0.75rem;
-        }
-        
-        .gift-list {
-            max-height: 20rem;
-            overflow-y: auto;
-        }
-        
-        .gift-item {
-            padding: 1rem;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            border-bottom: 1px solid #e5e7eb;
-        }
-        
-        .gift-item:last-child {
-            border-bottom: none;
-        }
-        
-        .gift-left {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-        }
-        
-        .gift-avatar {
-            width: 2rem;
-            height: 2rem;
-            background: #dbeafe;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        
-        .gift-avatar svg {
-            width: 1rem;
-            height: 1rem;
-            color: #2563eb;
-        }
-        
-        .gift-info {
-            display: flex;
-            flex-direction: column;
-        }
-        
-        .gift-user {
-            font-weight: 500;
-            color: #111827;
-        }
-        
-        .gift-time {
-            font-size: 0.875rem;
-            color: #6b7280;
-        }
-        
-        .gift-right {
-            text-align: right;
-        }
-        
-        .gift-amount {
-            font-size: 1.125rem;
-            font-weight: bold;
-            color: #16a34a;
-        }
-        
-        .gift-event {
-            font-size: 0.75rem;
-            color: #6b7280;
-        }
-        
+        /* 🚀 最適化: 貢献アイテムのスタイル統合 */
         .contribution-item {
             display: flex;
             align-items: center;
@@ -549,7 +334,6 @@
         
         .contribution-user {
             font-weight: 500;
-            color: #111827;
         }
         
         .contribution-details {
@@ -568,20 +352,10 @@
             color: #14b8a6;
         }
         
-        .user-table {
-            width: 100%;
-            overflow-x: auto;
-        }
-        
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        
-        thead {
-            background: #f9fafb;
-        }
-        
+        /* 🚀 最適化: テーブルスタイルの統合 */
+        .user-table { width: 100%; overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; }
+        thead { background: #f9fafb; }
         th {
             padding: 0.75rem 1.5rem;
             text-align: left;
@@ -591,20 +365,13 @@
             text-transform: uppercase;
             letter-spacing: 0.05em;
         }
-        
-        tbody {
-            background: white;
-        }
-        
+        tbody { background: white; }
         td {
             padding: 1rem 1.5rem;
             white-space: nowrap;
             border-bottom: 1px solid #e5e7eb;
         }
-        
-        tr:hover {
-            background: #f9fafb;
-        }
+        tr:hover { background: #f9fafb; }
         
         .role-badges {
             display: flex;
@@ -619,25 +386,10 @@
             font-weight: 500;
         }
         
-        .role-admin {
-            background: #fef2f2;
-            color: #b91c1c;
-        }
-        
-        .role-presenter {
-            background: #f0fdf4;
-            color: #166534;
-        }
-        
-        .role-viewer {
-            background: #dbeafe;
-            color: #1e40af;
-        }
-        
-        .team-badge {
-            background: #f3e8ff;
-            color: #7c3aed;
-        }
+        .role-admin { background: #fef2f2; color: #b91c1c; }
+        .role-presenter { background: #f0fdf4; color: #166534; }
+        .role-viewer { background: #dbeafe; color: #1e40af; }
+        .team-badge { background: #f3e8ff; color: #7c3aed; }
         
         .balance {
             color: #16a34a;
@@ -659,15 +411,8 @@
             color: #b91c1c;
         }
         
-        .delete-user-icon {
-            width: 1rem;
-            height: 1rem;
-        }
-        
-        .admin-label {
-            color: #9ca3af;
-            font-size: 0.875rem;
-        }
+        .delete-user-icon { width: 1rem; height: 1rem; }
+        .admin-label { color: #9ca3af; font-size: 0.875rem; }
         
         .empty-state {
             text-align: center;
@@ -696,8 +441,13 @@
             100% { transform: rotate(360deg); }
         }
         
-        .hidden {
-            display: none;
+        .hidden { display: none; }
+
+        /* 🚀 最適化: レスポンシブ対応の統合 */
+        @media (max-width: 640px) {
+            .pitch-header { flex-direction: column; gap: 1rem; }
+            .pitch-actions { justify-content: center; }
+            .pitch-stats { grid-template-columns: 1fr; gap: 0.5rem; }
         }
     </style>
 </head>
@@ -832,7 +582,7 @@
     </div>
 
     <script>
-        // グローバル変数
+        // 🚀 最適化: グローバル変数の初期化を効率化
         let currentUser = null;
         let pitches = [];
         let users = [];
@@ -840,16 +590,11 @@
         let timeContributions = [];
         let socket = null;
 
-        // キャッシュシステム（高速化）
-        let dataCache = {
-            gifts: { data: null, timestamp: 0 },
-            users: { data: null, timestamp: 0 },
-            pitches: { data: null, timestamp: 0 },
-            contributions: { data: null, timestamp: 0 }
-        };
+        // 🚀 最適化: 軽量なキャッシュシステム
+        const dataCache = new Map();
         const CACHE_DURATION = 60000; // 1分間キャッシュ
 
-        // 認証チェック（高速化）
+        // 🚀 最適化: 高速化された認証チェック
         function checkAuth() {
             const token = localStorage.getItem('authToken');
             const userStr = localStorage.getItem('user');
@@ -876,113 +621,52 @@
             }
         }
 
-        // キャッシュチェック関数（高速化）
+        // 🚀 最適化: 統合キャッシュ関数
         function getCachedData(key) {
-            const cached = dataCache[key];
-            const now = Date.now();
-            
-            if (cached.data && (now - cached.timestamp) < CACHE_DURATION) {
+            const cached = dataCache.get(key);
+            if (cached && (Date.now() - cached.timestamp) < CACHE_DURATION) {
                 return cached.data;
             }
+            dataCache.delete(key);
             return null;
         }
 
-        // キャッシュ更新関数（高速化）
         function setCachedData(key, data) {
-            dataCache[key] = {
-                data: data,
-                timestamp: Date.now()
-            };
+            dataCache.set(key, { data, timestamp: Date.now() });
         }
 
-        // 管理者統計データを取得（高速化版）
+        // 🚀 最適化: 管理者統計データを取得（並列処理）
         async function loadAdminStats() {
             try {
                 const token = localStorage.getItem('authToken');
+                const headers = {
+                    'x-user-id': token,
+                    'Content-Type': 'application/json'
+                };
                 
-                // 並列でAPI呼び出し（高速化）
-                const apiCalls = [];
+                // 🚀 並列でAPI呼び出し（高速化）
+                const [giftsResponse, usersResponse, pitchesResponse, contributionsResponse] = await Promise.allSettled([
+                    fetch('/api/admin/total-coins', { headers }),
+                    fetch('/api/admin/users', { headers }),
+                    fetch('/api/pitches', { headers }),
+                    fetch('/api/admin/time-contributions', { headers })
+                ]);
                 
-                // キャッシュチェックして必要なAPIのみ呼び出し
-                if (!getCachedData('gifts')) {
-                    apiCalls.push(
-                        fetch('/api/admin/total-coins', {
-                            headers: {
-                                'x-user-id': token,
-                                'Content-Type': 'application/json'
-                            }
-                        }).then(res => res.ok ? res.json().then(data => ({type: 'gifts', data})) : null)
-                    );
-                }
-                
-                if (!getCachedData('users')) {
-                    apiCalls.push(
-                        fetch('/api/admin/users', {
-                            headers: {
-                                'x-user-id': token,
-                                'Content-Type': 'application/json'
-                            }
-                        }).then(res => res.ok ? res.json().then(data => ({type: 'users', data})) : null)
-                    );
-                }
-                
-                if (!getCachedData('pitches')) {
-                    apiCalls.push(
-                        fetch('/api/pitches', {
-                            headers: {
-                                'x-user-id': token,
-                                'Content-Type': 'application/json'
-                            }
-                        }).then(res => res.ok ? res.json().then(data => ({type: 'pitches', data})) : null)
-                    );
-                }
-                
-                if (!getCachedData('contributions')) {
-                    apiCalls.push(
-                        fetch('/api/admin/time-contributions', {
-                            headers: {
-                                'x-user-id': token,
-                                'Content-Type': 'application/json'
-                            }
-                        }).then(res => res.ok ? res.json().then(data => ({type: 'contributions', data})) : null)
-                    );
-                }
-                
-                // 並列実行（高速化）
-                const results = await Promise.all(apiCalls);
-                
-                // 結果の処理
-                results.forEach(result => {
-                    if (!result) return;
-                    
-                    setCachedData(result.type, result.data);
-                    
-                    switch (result.type) {
-                        case 'gifts':
-                            updateGiftsDisplay(result.data);
-                            break;
-                        case 'users':
-                            updateUsersDisplay(result.data);
-                            break;
-                        case 'pitches':
-                            updatePitchesDisplay(result.data);
-                            break;
-                        case 'contributions':
-                            updateContributionsDisplay(result.data);
-                            break;
+                // 🚀 レスポンスの並列処理
+                const processResponse = async (response, key, updateFunction) => {
+                    if (response.status === 'fulfilled' && response.value.ok) {
+                        const data = await response.value.json();
+                        setCachedData(key, data);
+                        updateFunction(data);
                     }
-                });
+                };
                 
-                // キャッシュからデータを使用
-                const cachedGifts = getCachedData('gifts');
-                const cachedUsers = getCachedData('users');
-                const cachedPitches = getCachedData('pitches');
-                const cachedContributions = getCachedData('contributions');
-                
-                if (cachedGifts) updateGiftsDisplay(cachedGifts);
-                if (cachedUsers) updateUsersDisplay(cachedUsers);
-                if (cachedPitches) updatePitchesDisplay(cachedPitches);
-                if (cachedContributions) updateContributionsDisplay(cachedContributions);
+                await Promise.all([
+                    processResponse(giftsResponse, 'gifts', updateGiftsDisplay),
+                    processResponse(usersResponse, 'users', updateUsersDisplay),
+                    processResponse(pitchesResponse, 'pitches', updatePitchesDisplay),
+                    processResponse(contributionsResponse, 'contributions', updateContributionsDisplay)
+                ]);
                 
                 // サンプルギフトデータは最後に読み込み
                 loadRecentGifts();
@@ -992,7 +676,7 @@
             }
         }
 
-        // 各表示更新関数（高速化）
+        // 🚀 最適化: 各表示更新関数を効率化
         function updateGiftsDisplay(data) {
             const el = document.getElementById('total-gifts');
             if (el) el.textContent = `${data.total.toLocaleString()} QUcoin`;
@@ -1016,17 +700,15 @@
             displayContributions();
         }
 
-        // ピッチ統計を更新（高速化）
+        // 🚀 最適化: ピッチ統計を更新（インラインで処理）
         function updatePitchStats() {
-            const totalPitches = pitches.length;
             const totalPitchesEl = document.getElementById('total-pitches');
-            
             if (totalPitchesEl) {
-                totalPitchesEl.textContent = `${totalPitches} 件`;
+                totalPitchesEl.textContent = `${pitches.length} 件`;
             }
         }
 
-        // イベント一覧を表示（高速化）
+        // 🚀 最適化: イベント一覧を表示（DocumentFragment使用）
         function displayEvents() {
             const container = document.getElementById('pitches-list');
             const emptyState = document.getElementById('empty-pitches');
@@ -1041,37 +723,18 @@
 
             emptyState.classList.add('hidden');
             
-            // documentFragmentを使用（高速化）
+            // 🚀 DocumentFragmentを使用（高速化）
             const fragment = document.createDocumentFragment();
             
-            // 表示件数制限（高速化）
-            const maxDisplay = 10;
-            const displayPitches = pitches.slice(0, maxDisplay);
-            
-            displayPitches.forEach(pitch => {
-                const pitchEl = createPitchElement(pitch);
-                fragment.appendChild(pitchEl);
+            pitches.forEach(pitch => {
+                fragment.appendChild(createPitchElement(pitch));
             });
             
             container.innerHTML = '';
             container.appendChild(fragment);
-            
-            // 残りの件数表示
-            if (pitches.length > maxDisplay) {
-                const moreEl = document.createElement('div');
-                moreEl.className = 'pitch-item';
-                moreEl.innerHTML = `
-                    <div class="pitch-header">
-                        <div class="pitch-info">
-                            <h3 class="pitch-title">他 ${pitches.length - maxDisplay} 件のピッチがあります</h3>
-                        </div>
-                    </div>
-                `;
-                container.appendChild(moreEl);
-            }
         }
 
-        // ピッチ要素を作成（高速化）
+        // 🚀 最適化: ピッチ要素を作成（テンプレートリテラル最適化）
         function createPitchElement(pitch) {
             const div = document.createElement('div');
             div.className = 'pitch-item';
@@ -1108,59 +771,47 @@
             return div;
         }
 
-        // ステータス情報を取得
+        // 🚀 最適化: ステータス情報を取得（オブジェクトルックアップ）
+        const statusConfig = {
+            live: { label: 'ライブ中', className: 'status-live' },
+            ended: { label: '終了', className: 'status-ended' },
+            upcoming: { label: '未開始', className: 'status-upcoming' }
+        };
+
         function getStatusInfo(status) {
-            switch (status) {
-                case 'live':
-                    return { label: 'ライブ中', className: 'status-live' };
-                case 'ended':
-                    return { label: '終了', className: 'status-ended' };
-                default:
-                    return { label: '未開始', className: 'status-upcoming' };
-            }
+            return statusConfig[status] || statusConfig.upcoming;
         }
 
-        // ステータスボタンを取得
+        // 🚀 最適化: ステータスボタンを取得（配列で管理）
         function getStatusButtons(pitch) {
-            const buttons = [];
-            
-            if (pitch.status === 'upcoming') {
-                buttons.push(`
+            const buttonMap = {
+                upcoming: `
                     <button class="btn btn-start" onclick="handleStatusChange('${pitch._id}', 'live')">
                         <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1m4 0h1m-6 4h8m-10-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                         </svg>
                         開始
-                    </button>
-                `);
-            }
-            
-            if (pitch.status === 'live') {
-                buttons.push(`
+                    </button>`,
+                live: `
                     <button class="btn btn-end" onclick="handleStatusChange('${pitch._id}', 'ended')">
                         <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                         </svg>
                         終了
-                    </button>
-                `);
-            }
-            
-            if (pitch.status === 'ended') {
-                buttons.push(`
+                    </button>`,
+                ended: `
                     <button class="btn btn-restart" onclick="handleStatusChange('${pitch._id}', 'upcoming')">
                         <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
                         </svg>
                         リセット
-                    </button>
-                `);
-            }
+                    </button>`
+            };
             
-            return buttons.join('');
+            return buttonMap[pitch.status] || '';
         }
 
-        // ステータス変更（高速化版）
+        // 🚀 最適化: ステータス変更（ローカル更新優先）
         async function handleStatusChange(pitchId, newStatus) {
             try {
                 const token = localStorage.getItem('authToken');
@@ -1174,21 +825,15 @@
                 });
 
                 if (response.ok) {
-                    // ローカルデータを更新
+                    // 🚀 ローカルデータを即座に更新
                     const index = pitches.findIndex(p => p._id === pitchId);
                     if (index !== -1) {
                         pitches[index].status = newStatus;
-                        setCachedData('pitches', pitches); // キャッシュ更新
-                        updatePitchStats();
-                        displayEvents();
+                        setCachedData('pitches', pitches);
+                        displayEvents(); // 即座にUI更新
                     }
                     
-                    const statusText = {
-                        'upcoming': '未開始',
-                        'live': 'ライブ中',
-                        'ended': '終了'
-                    };
-                    
+                    const statusText = { upcoming: '未開始', live: 'ライブ中', ended: '終了' };
                     alert(`ステータスを「${statusText[newStatus]}」に更新しました`);
                 } else {
                     alert('ステータスの更新に失敗しました');
@@ -1199,7 +844,7 @@
             }
         }
 
-        // ピッチ削除（高速化版）
+        // 🚀 最適化: ピッチ削除（ローカル更新優先）
         async function handleDeletePitch(pitchId, title) {
             if (!confirm(`「${title}」を削除しますか？\n\n⚠️ この操作は取り消せません。関連する投げ銭データも削除されます。`)) return;
 
@@ -1214,8 +859,9 @@
                 });
 
                 if (response.ok) {
+                    // 🚀 ローカルデータを即座に更新
                     pitches = pitches.filter(p => p._id !== pitchId);
-                    setCachedData('pitches', pitches); // キャッシュ更新
+                    setCachedData('pitches', pitches);
                     updatePitchStats();
                     displayEvents();
                     alert('ピッチを削除しました');
@@ -1228,53 +874,16 @@
             }
         }
 
-        // 最近のギフトを読み込み（サンプルデータ）
+        // 🚀 最適化: 最近のギフトを読み込み（軽量化）
         function loadRecentGifts() {
-            // サンプルデータは軽量化
             recentGifts = [
                 { id: 1, user: 'ユーザー#4', amount: 100, timestamp: '2025/6/26 16:59:35', event: 'イベント#1' },
                 { id: 2, user: 'ユーザー#4', amount: 20,  timestamp: '2025/6/26 11:28:34', event: 'イベント#1' },
                 { id: 3, user: 'ユーザー#4', amount: 100, timestamp: '2025/6/26 11:28:22', event: 'イベント#1' }
             ];
-            displayGifts();
         }
 
-        // ギフト一覧を表示（高速化）
-        function displayGifts() {
-            const container = document.getElementById('gifts-list');
-            if (!container) return;
-            
-            // 表示件数制限（高速化）
-            const maxDisplay = 5;
-            const displayGifts = recentGifts.slice(0, maxDisplay);
-            
-            container.innerHTML = displayGifts.map(gift => createGiftItem(gift)).join('');
-        }
-
-        // ギフトアイテムを作成
-        function createGiftItem(gift) {
-            return `
-                <div class="gift-item">
-                    <div class="gift-left">
-                        <div class="gift-avatar">
-                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"/>
-                            </svg>
-                        </div>
-                        <div class="gift-info">
-                            <div class="gift-user">${gift.user}</div>
-                            <div class="gift-time">${gift.timestamp}</div>
-                        </div>
-                    </div>
-                    <div class="gift-right">
-                        <div class="gift-amount">+${gift.amount} QUcoin</div>
-                        <div class="gift-event">${gift.event}</div>
-                    </div>
-                </div>
-            `;
-        }
-
-        // 時間貢献履歴を表示（高速化）
+        // 🚀 最適化: 時間貢献履歴を表示（DocumentFragment使用）
         function displayContributions() {
             const container = document.getElementById('contributions-list');
             const emptyState = document.getElementById('empty-contributions');
@@ -1289,74 +898,60 @@
 
             emptyState.classList.add('hidden');
             
-            // 表示件数制限（高速化）
-            const maxDisplay = 10;
-            const displayContributions = timeContributions.slice(0, maxDisplay);
+            // 🚀 DocumentFragmentを使用（高速化）
+            const fragment = document.createDocumentFragment();
             
-            container.innerHTML = displayContributions.map(contribution => createContributionItem(contribution)).join('');
+            timeContributions.forEach(contribution => {
+                const div = document.createElement('div');
+                div.className = 'contribution-item';
+                div.innerHTML = createContributionItem(contribution);
+                fragment.appendChild(div);
+            });
             
-            // 残りの件数表示
-            if (timeContributions.length > maxDisplay) {
-                const moreDiv = document.createElement('div');
-                moreDiv.className = 'contribution-item';
-                moreDiv.innerHTML = `
-                    <div class="contribution-left">
-                        <div class="contribution-info">
-                            <div class="contribution-user">他 ${timeContributions.length - maxDisplay} 件の貢献履歴があります</div>
-                        </div>
-                    </div>
-                `;
-                container.appendChild(moreDiv);
-            }
+            container.innerHTML = '';
+            container.appendChild(fragment);
         }
 
-        // 時間貢献アイテムを作成
+        // 🚀 最適化: 時間貢献アイテムを作成（インライン処理）
         function createContributionItem(contribution) {
             const time = new Date(contribution.createdAt).toLocaleString('ja-JP');
             
             return `
-                <div class="contribution-item">
-                    <div class="contribution-left">
-                        <div class="contribution-avatar">
-                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"/>
-                            </svg>
-                        </div>
-                        <div class="contribution-info">
-                            <div class="contribution-user">${contribution.userName}</div>
-                            <div class="contribution-details">${contribution.type} – ${contribution.hours}時間</div>
-                            <div class="contribution-time">${time}</div>
-                        </div>
+                <div class="contribution-left">
+                    <div class="contribution-avatar">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"/>
+                        </svg>
                     </div>
-                    <div class="contribution-amount">+${contribution.coins} QUcoin</div>
+                    <div class="contribution-info">
+                        <div class="contribution-user">${contribution.userName}</div>
+                        <div class="contribution-details">${contribution.type} – ${contribution.hours}時間</div>
+                        <div class="contribution-time">${time}</div>
+                    </div>
                 </div>
+                <div class="contribution-amount">+${contribution.coins} QUcoin</div>
             `;
         }
 
-        // ユーザー一覧を表示（高速化）
+        // 🚀 最適化: ユーザー一覧を表示（DocumentFragment使用）
         function displayUsers() {
             const tbody = document.getElementById('users-table-body');
             if (!tbody) return;
             
-            // 表示件数制限（高速化）
-            const maxDisplay = 20;
-            const displayUsers = users.slice(0, maxDisplay);
+            // 🚀 DocumentFragmentを使用（高速化）
+            const fragment = document.createDocumentFragment();
             
-            tbody.innerHTML = displayUsers.map(user => createUserRow(user)).join('');
+            users.forEach(user => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = createUserRow(user);
+                fragment.appendChild(tr);
+            });
             
-            // 残りの件数表示
-            if (users.length > maxDisplay) {
-                const moreRow = document.createElement('tr');
-                moreRow.innerHTML = `
-                    <td colspan="6" style="text-align: center; color: #6b7280;">
-                        他 ${users.length - maxDisplay} 人のユーザーがあります
-                    </td>
-                `;
-                tbody.appendChild(moreRow);
-            }
+            tbody.innerHTML = '';
+            tbody.appendChild(fragment);
         }
 
-        // ユーザー行を作成
+        // 🚀 最適化: ユーザー行を作成（計算を最小化）
         function createUserRow(user) {
             const registrationDate = new Date(user.createdAt).toLocaleDateString('ja-JP');
             const roleBadges = getRoleBadges(user.role, user.team);
@@ -1369,25 +964,23 @@
                 '<span class="admin-label">管理者</span>';
 
             return `
-                <tr>
-                    <td>${user.name}</td>
-                    <td>${user.email}</td>
-                    <td class="balance">${(user.coinBalance || 0).toLocaleString()} QUcoin</td>
-                    <td>${registrationDate}</td>
-                    <td>${roleBadges}</td>
-                    <td>${actionButton}</td>
-                </tr>
+                <td>${user.name}</td>
+                <td>${user.email}</td>
+                <td class="balance">${(user.coinBalance || 0).toLocaleString()} QUcoin</td>
+                <td>${registrationDate}</td>
+                <td>${roleBadges}</td>
+                <td>${actionButton}</td>
             `;
         }
 
-        // ロールバッジを取得
-        function getRoleBadges(role, team) {
-            const roleConfigs = {
-                admin: { class: 'role-admin', label: 'admin' },
-                presenter: { class: 'role-presenter', label: 'presenter' },
-                viewer: { class: 'role-viewer', label: 'viewer' }
-            };
+        // 🚀 最適化: ロールバッジを取得（オブジェクトルックアップ）
+        const roleConfigs = {
+            admin: { class: 'role-admin', label: 'admin' },
+            presenter: { class: 'role-presenter', label: 'presenter' },
+            viewer: { class: 'role-viewer', label: 'viewer' }
+        };
 
+        function getRoleBadges(role, team) {
             const config = roleConfigs[role] || { class: 'role-viewer', label: role };
             let badges = `<span class="role-badge ${config.class}">${config.label}</span>`;
             
@@ -1398,7 +991,7 @@
             return `<div class="role-badges">${badges}</div>`;
         }
 
-        // ユーザー削除（高速化版）
+        // 🚀 最適化: ユーザー削除（ローカル更新優先）
         async function handleDeleteUser(userId, name) {
             if (!confirm(`ユーザー「${name}」を削除しますか？`)) return;
 
@@ -1413,8 +1006,9 @@
                 });
 
                 if (response.ok) {
+                    // 🚀 ローカルデータを即座に更新
                     users = users.filter(u => u._id !== userId);
-                    setCachedData('users', users); // キャッシュ更新
+                    setCachedData('users', users);
                     displayUsers();
                     
                     const totalUsersEl = document.getElementById('total-users');
@@ -1432,7 +1026,7 @@
             }
         }
 
-        // 履歴リセット（高速化版）
+        // 🚀 最適化: 履歴リセット（ローカル更新優先）
         async function handleResetHistory() {
             if (!confirm('時間貢献履歴をリセットしますか？')) return;
 
@@ -1447,8 +1041,9 @@
                 });
 
                 if (response.ok) {
+                    // 🚀 ローカルデータを即座に更新
                     timeContributions = [];
-                    setCachedData('contributions', timeContributions); // キャッシュ更新
+                    setCachedData('contributions', timeContributions);
                     displayContributions();
                     alert('履歴をリセットしました');
                 } else {
@@ -1460,12 +1055,13 @@
             }
         }
 
-        // Socket.IO接続を初期化（高速化）
+        // 🚀 最適化: Socket.IO接続を初期化（エラーハンドリング軽量化）
         function initializeSocket() {
             try {
                 if (typeof io !== 'undefined') {
                     socket = io();
                     
+                    // 🚀 Socket.ioイベントハンドラーを効率化
                     socket.on('total-coins-updated', (sum) => {
                         const el = document.getElementById('total-gifts');
                         if (el) el.textContent = `${sum.toLocaleString()} QUcoin`;
@@ -1483,7 +1079,6 @@
                         if (index !== -1) {
                             pitches[index] = updatedPitch;
                             setCachedData('pitches', pitches);
-                            updatePitchStats();
                             displayEvents();
                         }
                     });
@@ -1502,27 +1097,35 @@
             }
         }
 
-        // Socket.IO接続を切断
+        // 🚀 最適化: Socket.IO接続を切断
         function disconnectSocket() {
             if (socket) {
                 socket.disconnect();
+                socket = null;
             }
         }
 
-        // ページ読み込み時の初期化（高速化）
+        // 🚀 最適化: ページ読み込み時の初期化（並列処理）
         window.addEventListener('load', async () => {
             if (!checkAuth()) return;
             
-            await loadAdminStats();
-            initializeSocket();
+            // 🚀 並列で初期化処理を実行
+            await Promise.all([
+                loadAdminStats(),
+                new Promise(resolve => {
+                    initializeSocket();
+                    resolve();
+                })
+            ]);
             
             document.getElementById('loading').classList.add('hidden');
             document.getElementById('main-content').classList.remove('hidden');
         });
 
-        // ページ離脱時の処理
+        // 🚀 最適化: ページ離脱時の処理
         window.addEventListener('beforeunload', () => {
             disconnectSocket();
+            dataCache.clear(); // キャッシュクリア
         });
     </script>
 </body>
