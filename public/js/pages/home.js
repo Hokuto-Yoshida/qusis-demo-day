@@ -283,14 +283,10 @@ function createPitchCard(pitch) {
   const tipsStat = document.createElement('span');
   tipsStat.className = 'stat-item';
   tipsStat.textContent = `${pitch.totalTips || 0} QU`;
-  
-  const participantsStat = document.createElement('span');
-  participantsStat.className = 'stat-item participants';
-  participantsStat.textContent = `${pitch.participants || 0}人`;
+
   
   statsLeft.appendChild(tipsStat);
   statsDiv.appendChild(statsLeft);
-  statsDiv.appendChild(participantsStat);
   
   // アクションボタン（ステータスに応じて制御）
   const actionElement = document.createElement(status.clickable ? 'a' : 'button');
