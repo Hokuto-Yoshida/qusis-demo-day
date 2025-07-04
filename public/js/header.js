@@ -1,10 +1,13 @@
-// public/js/header.js - 修正版（リアルタイム残高更新対応）
+// public/js/header.js - リアルタイム最適化版
 
 class Header {
     constructor() {
         this.currentUser = null;
         this.currentPath = window.location.pathname;
         this.balanceUpdateInterval = null;
+        this.lastKnownBalance = null;
+        this.updateFrequency = this.getOptimalUpdateFrequency();
+        this.pendingBalanceUpdate = false;
         this.init();
     }
 
@@ -12,7 +15,25 @@ class Header {
         this.loadUser();
         this.createHeader();
         this.attachEventListeners();
-        this.startBalanceUpdates();
+        this.setupRealtimeBalanceUpdates();
+    }
+
+    // 🚀 ページ別の最適な更新頻度を決定
+    getOptimalUpdateFrequency() {
+        const path = window.location.pathname;
+        
+        // ピッチ詳細ページ: 高頻度更新（投げ銭・チャットがある）
+        if (path.includes('pitch-detail')) {
+            return 2000; // 2秒
+        }
+        
+        // コイン管理ページ: 中頻度更新
+        if (path.includes('coin')) {
+            return 2000; // 2秒
+        }
+        
+        // ホーム・その他: 低頻度更新
+        return 15000; // 15秒
     }
 
     loadUser() {
@@ -20,6 +41,7 @@ class Header {
         if (userStr) {
             try {
                 this.currentUser = JSON.parse(userStr);
+                this.lastKnownBalance = this.currentUser.coinBalance;
             } catch (error) {
                 console.error('ユーザー情報の読み込みエラー:', error);
             }
@@ -69,13 +91,14 @@ class Header {
                         <!-- Right Side -->
                         <div class="header-right">
                             <!-- Coin Balance -->
-                            <div class="coin-balance">
+                            <div class="coin-balance" id="coin-balance-container">
                                 <svg class="coin-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"/>
                                 </svg>
                                 <span class="coin-amount" id="header-coin-balance">
                                     ${(this.currentUser.coinBalance || 0).toLocaleString()} QUcoin
                                 </span>
+                                <span class="balance-indicator" id="balance-indicator"></span>
                             </div>
 
                             <!-- Add Coins Button -->
@@ -241,6 +264,12 @@ class Header {
                     background: #fff7ed;
                     padding: 0.25rem 0.75rem;
                     border-radius: 9999px;
+                    position: relative;
+                    transition: all 0.3s ease;
+                }
+                
+                .coin-balance.updating {
+                    background: #f0fdfa;
                 }
                 
                 .coin-icon {
@@ -253,6 +282,36 @@ class Header {
                     font-size: 0.875rem;
                     font-weight: 500;
                     color: #9a3412;
+                    transition: color 0.3s ease;
+                }
+                
+                .balance-indicator {
+                    position: absolute;
+                    top: -2px;
+                    right: -2px;
+                    width: 8px;
+                    height: 8px;
+                    border-radius: 50%;
+                    opacity: 0;
+                    transition: opacity 0.3s ease;
+                }
+                
+                .balance-indicator.increased {
+                    background: #10b981;
+                    opacity: 1;
+                    animation: balancePulse 0.5s ease;
+                }
+                
+                .balance-indicator.decreased {
+                    background: #f59e0b;
+                    opacity: 1;
+                    animation: balancePulse 0.5s ease;
+                }
+                
+                @keyframes balancePulse {
+                    0% { transform: scale(0); }
+                    50% { transform: scale(1.5); }
+                    100% { transform: scale(1); }
                 }
                 
                 .add-coins-btn {
@@ -486,75 +545,194 @@ class Header {
         window.location.href = 'index.html';
     }
 
-    // 🚀 新機能: サーバーから実際の残高を取得
+    // 🚀 サーバーから実際の残高を取得（最適化版）
     async fetchRealBalance() {
+        // 既に更新中の場合はスキップ
+        if (this.pendingBalanceUpdate) {
+            return;
+        }
+
         try {
+            this.pendingBalanceUpdate = true;
+            
             const token = localStorage.getItem('authToken');
             if (!token) return;
+
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 3000); // 3秒タイムアウト
 
             const response = await fetch('/api/coins/balance', {
                 headers: {
                     'x-user-id': token,
                     'Content-Type': 'application/json'
-                }
+                },
+                signal: controller.signal
             });
+
+            clearTimeout(timeoutId);
 
             if (response.ok) {
                 const data = await response.json();
-                
-                // localStorageのユーザー情報を更新
-                const userStr = localStorage.getItem('user');
-                if (userStr) {
-                    const user = JSON.parse(userStr);
-                    user.coinBalance = data.balance;
-                    localStorage.setItem('user', JSON.stringify(user));
-                    
-                    // 表示を更新
-                    this.updateBalanceDisplay(data.balance);
-                }
+                this.updateBalance(data.balance);
             }
         } catch (error) {
-            console.error('ヘッダー残高取得エラー:', error);
+            if (error.name !== 'AbortError') {
+                console.error('ヘッダー残高取得エラー:', error);
+            }
+        } finally {
+            this.pendingBalanceUpdate = false;
         }
     }
 
-    // 残高表示を更新
-    updateBalanceDisplay(balance) {
+    // 🚀 残高更新（視覚的フィードバック付き）
+    updateBalance(newBalance) {
         const balanceEl = document.getElementById('header-coin-balance');
-        if (balanceEl) {
-            balanceEl.textContent = `${(balance || 0).toLocaleString()} QUcoin`;
+        const indicatorEl = document.getElementById('balance-indicator');
+        const containerEl = document.getElementById('coin-balance-container');
+        
+        if (!balanceEl) return;
+
+        const oldBalance = this.lastKnownBalance;
+        
+        // 残高が変更された場合
+        if (oldBalance !== null && oldBalance !== newBalance) {
+            // 視覚的フィードバック
+            containerEl?.classList.add('updating');
+            
+            // 増減インジケーター
+            if (indicatorEl) {
+                indicatorEl.className = 'balance-indicator';
+                if (newBalance > oldBalance) {
+                    indicatorEl.classList.add('increased');
+                } else if (newBalance < oldBalance) {
+                    indicatorEl.classList.add('decreased');
+                }
+                
+                // 1秒後にインジケーターを消す
+                setTimeout(() => {
+                    indicatorEl.className = 'balance-indicator';
+                }, 1000);
+            }
+            
+            // 0.3秒後に更新状態を解除
+            setTimeout(() => {
+                containerEl?.classList.remove('updating');
+            }, 300);
         }
+
+        // 表示を更新
+        balanceEl.textContent = `${(newBalance || 0).toLocaleString()} QUcoin`;
+        
+        // localStorageのユーザー情報を更新
+        const userStr = localStorage.getItem('user');
+        if (userStr) {
+            try {
+                const user = JSON.parse(userStr);
+                user.coinBalance = newBalance;
+                localStorage.setItem('user', JSON.stringify(user));
+            } catch (error) {
+                console.error('ユーザー情報更新エラー:', error);
+            }
+        }
+        
+        this.lastKnownBalance = newBalance;
     }
 
-    // 🚀 新機能: 定期的な残高更新システム
-    startBalanceUpdates() {
+    // 🚀 リアルタイム残高更新システム
+    setupRealtimeBalanceUpdates() {
         // 初回実行
         this.fetchRealBalance();
         
-        // 1秒ごとにサーバーから残高を取得
+        // ページ別の最適な頻度で定期更新
         this.balanceUpdateInterval = setInterval(() => {
             this.fetchRealBalance();
-        }, 5000);
+        }, this.updateFrequency);
 
-        // localStorageの変更も監視（即座の反映用）
-        const updateFromLocalStorage = () => {
-            const userStr = localStorage.getItem('user');
-            if (userStr) {
+        // 🚀 即座の更新イベントリスナー
+        this.setupInstantUpdates();
+
+        // ページの可視性変更時の処理
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden) {
+                // ページが再び表示された時は即座に更新
+                this.fetchRealBalance();
+            }
+        });
+
+        console.log(`💡 ヘッダー残高更新設定: ${this.updateFrequency/1000}秒間隔 (${this.currentPath})`);
+    }
+
+    // 🚀 即座の更新システム
+    setupInstantUpdates() {
+        // カスタムイベントでの即座更新
+        window.addEventListener('coinBalanceChanged', (event) => {
+            if (event.detail && typeof event.detail.newBalance === 'number') {
+                this.updateBalance(event.detail.newBalance);
+            }
+        });
+
+        // localStorage変更の監視（他のタブでの変更も反映）
+        window.addEventListener('storage', (event) => {
+            if (event.key === 'user' && event.newValue) {
                 try {
-                    const user = JSON.parse(userStr);
-                    this.updateBalanceDisplay(user.coinBalance);
+                    const user = JSON.parse(event.newValue);
+                    if (user.coinBalance !== this.lastKnownBalance) {
+                        this.updateBalance(user.coinBalance);
+                    }
                 } catch (error) {
-                    console.error('ローカルストレージからの残高更新エラー:', error);
+                    console.error('Storage event処理エラー:', error);
                 }
             }
-        };
+        });
 
-        // storage イベントで即座に更新
-        window.addEventListener('storage', updateFromLocalStorage);
+        // 🚀 ページ内アクション後の即座更新（投げ銭・チャット後）
+        this.setupActionBasedUpdates();
+    }
+
+    // 🚀 アクション後の即座更新
+    setupActionBasedUpdates() {
+        // 投げ銭成功後
+        window.addEventListener('tipSent', () => {
+            console.log('🎯 投げ銭完了 - 残高を即座更新');
+            setTimeout(() => this.fetchRealBalance(), 100);
+        });
+
+        // チャット送信後
+        window.addEventListener('messageSent', () => {
+            console.log('💬 チャット送信完了 - 残高を即座更新');
+            setTimeout(() => this.fetchRealBalance(), 100);
+        });
+
+        // コイン獲得後
+        window.addEventListener('coinsEarned', () => {
+            console.log('💰 コイン獲得 - 残高を即座更新');
+            setTimeout(() => this.fetchRealBalance(), 100);
+        });
     }
 }
 
-// 認証が必要なページでヘッダーを初期化（完全シンプル版）
+// 🚀 グローバル関数: 他のページから残高更新をトリガー
+window.updateCoinBalance = function(newBalance) {
+    window.dispatchEvent(new CustomEvent('coinBalanceChanged', {
+        detail: { newBalance }
+    }));
+};
+
+// 🚀 グローバル関数: アクション完了通知
+window.notifyActionCompleted = function(actionType) {
+    const eventMap = {
+        'tip': 'tipSent',
+        'message': 'messageSent',
+        'coins': 'coinsEarned'
+    };
+    
+    const eventName = eventMap[actionType];
+    if (eventName) {
+        window.dispatchEvent(new CustomEvent(eventName));
+    }
+};
+
+// 認証が必要なページでヘッダーを初期化
 function initializeHeader() {
     const token = localStorage.getItem('authToken');
     const user = localStorage.getItem('user');
@@ -562,16 +740,13 @@ function initializeHeader() {
     console.log('認証チェック - Token:', !!token);
     console.log('認証チェック - User:', !!user);
     
-    // トークンとユーザー情報の両方があればヘッダー表示
     if (token && user) {
         try {
-            // ユーザー情報が有効なJSONかチェック
             JSON.parse(user);
             console.log('ヘッダー初期化開始');
             new Header();
         } catch (error) {
             console.error('ユーザー情報が無効:', error);
-            // 無効なデータをクリア
             localStorage.removeItem('authToken');
             localStorage.removeItem('user');
             window.location.href = 'login.html';
